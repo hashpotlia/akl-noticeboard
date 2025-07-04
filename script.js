@@ -95,7 +95,7 @@ async function createNoticeInDB(noticeData) {
     }
 }
 
-// Create Signature in Database (SIMPLE RELATIONSHIP VERSION)
+// Create Signature in Database (WITH REQUIRED ID)
 async function createSignatureInDB(signatureData) {
     const mutation = `
         mutation CreateSignature($input: CreateSignatureInput!) {
@@ -109,9 +109,12 @@ async function createSignatureInDB(signatureData) {
         }
     `;
     
-    // Simple approach - just the core fields
+    // Generate a unique ID since it's required
+    const uniqueId = 'sig-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    
     const variables = {
         input: {
+            id: uniqueId,  // Required field!
             noticeId: signatureData.noticeId,
             userId: signatureData.userId,
             userName: signatureData.userName,
@@ -120,17 +123,17 @@ async function createSignatureInDB(signatureData) {
     };
     
     try {
+        console.log('Creating signature with required ID:', variables);
         const data = await graphqlRequest(mutation, variables);
+        console.log('Signature created successfully:', data);
         return data.createSignature;
     } catch (error) {
-        console.error('Signature creation error details:', {
-            error: error.message,
-            input: variables.input,
-            noticeId: signatureData.noticeId
-        });
+        console.error('Signature creation failed:', error);
+        console.error('Input data was:', variables);
         throw error;
     }
 }
+
 
 
 
