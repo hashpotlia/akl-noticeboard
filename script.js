@@ -61,6 +61,31 @@ async function fetchNoticesFromDB() {
     }
 }
 
+// Fetch Signatures from Database
+async function fetchSignaturesFromDB() {
+    const query = `
+        query ListSignatures {
+            listSignatures {
+                items {
+                    id
+                    noticeId
+                    userId
+                    userName
+                    timestamp
+                }
+            }
+        }
+    `;
+    
+    try {
+        const data = await graphqlRequest(query);
+        return data.listSignatures.items;
+    } catch (error) {
+        console.error('Failed to fetch signatures:', error);
+        return [];
+    }
+}
+
 // Create New Notice in Database
 async function createNoticeInDB(noticeData) {
     const mutation = `
@@ -95,7 +120,7 @@ async function createNoticeInDB(noticeData) {
     }
 }
 
-// Create Signature in Database (CORRECT RELATIONSHIP FIELDS)
+// Create Signature in Database
 async function createSignatureInDB(signatureData) {
     const mutation = `
         mutation CreateSignature($input: CreateSignatureInput!) {
@@ -109,48 +134,39 @@ async function createSignatureInDB(signatureData) {
         }
     `;
     
-    // Generate a unique ID
     const uniqueId = 'sig-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     
     const variables = {
         input: {
             id: uniqueId,
-            noticeId: signatureData.noticeId,     // Regular field (lowercase d)
-            noticeID: signatureData.noticeId,     // Relationship field (uppercase D) - THIS WAS MISSING!
+            noticeId: signatureData.noticeId,
+            noticeID: signatureData.noticeId,
             userId: signatureData.userId,
             userName: signatureData.userName,
             timestamp: signatureData.timestamp
         }
     };
     
-    console.log('Creating signature with both noticeId fields:', variables);
-    
     try {
         const data = await graphqlRequest(mutation, variables);
-        console.log('Signature created successfully with relationship:', data);
         return data.createSignature;
     } catch (error) {
         console.error('Signature creation failed:', error);
-        console.error('Input data was:', variables);
         throw error;
     }
 }
-
-
-
-
 
 // AKL NoticeBoard - Complete Application Logic
 class AKLNoticeBoard {
     constructor() {
         this.notices = [];
         this.signatures = new Map();
+        this.allSignatures = []; // Store all signatures from DB
         this.currentFilter = 'all';
         this.searchQuery = '';
         this.currentUser = this.getCurrentUser();
         this.autoRefreshInterval = null;
         this.isAdmin = false;
-        this.apiEndpoint = 'https://api.github.com/repos/your-username/akl-noticeboard-data/contents/notices.json';
         
         this.init();
     }
@@ -167,14 +183,22 @@ class AKLNoticeBoard {
         console.log('✅ AKL NoticeBoard initialized successfully');
     }
 
-    // Get current user (in production, this would come from authentication)
+    // Get current user (enhanced to store user name)
     getCurrentUser() {
         return {
-            id: 'user_' + Math.random().toString(36).substr(2, 9),
-            name: localStorage.getItem('akl_user_name') || 'DCO Tech',
-            email: localStorage.getItem('akl_user_email') || 'dco.tech@amazon.com',
+            id: localStorage.getItem('akl_user_id') || 'user_' + Math.random().toString(36).substr(2, 9),
+            name: localStorage.getItem('akl_user_name') || '',
+            email: localStorage.getItem('akl_user_email') || '',
             role: localStorage.getItem('akl_user_role') || 'technician'
         };
+    }
+
+    // Save current user
+    saveCurrentUser(userData) {
+        localStorage.setItem('akl_user_id', userData.id);
+        localStorage.setItem('akl_user_name', userData.name);
+        localStorage.setItem('akl_user_email', userData.email || '');
+        this.currentUser = userData;
     }
 
     // Setup all event listeners
@@ -245,45 +269,42 @@ class AKLNoticeBoard {
         });
     }
 
-    // MODIFIED: Load data from AWS API first, fallback to sample data
+    // ENHANCED: Load data from AWS API with signatures
     async loadData() {
         try {
-            // Try to load from AWS API first
-            const awsNotices = await fetchNoticesFromDB();
+            // Load notices and signatures in parallel
+            const [awsNotices, awsSignatures] = await Promise.all([
+                fetchNoticesFromDB(),
+                fetchSignaturesFromDB()
+            ]);
+            
             if (awsNotices && awsNotices.length > 0) {
                 this.notices = awsNotices;
                 console.log('✅ Loaded notices from AWS database:', this.notices);
             } else {
-                throw new Error('No AWS data available');
+                throw new Error('No AWS notices available');
             }
-        } catch (error) {
-            console.log('📡 AWS API not available, trying GitHub API...');
-            try {
-                // Try GitHub API as fallback
-                const response = await fetch(this.apiEndpoint);
-                if (response.ok) {
-                    const data = await response.json();
-                    this.notices = JSON.parse(atob(data.content));
-                    console.log('✅ Loaded notices from GitHub API');
-                } else {
-                    throw new Error('GitHub API not available');
-                }
-            } catch (githubError) {
-                console.log('📡 GitHub API also not available, loading sample data...');
-                this.loadSampleData();
-            }
-        }
 
-        // Load signatures from localStorage
-        const savedSignatures = localStorage.getItem('akl_signatures');
-        if (savedSignatures) {
-            this.signatures = new Map(JSON.parse(savedSignatures));
+            if (awsSignatures) {
+                this.allSignatures = awsSignatures;
+                // Convert to Map for quick lookup by noticeId + userId
+                this.signatures = new Map();
+                awsSignatures.forEach(sig => {
+                    const key = `${sig.noticeId}_${sig.userId}`;
+                    this.signatures.set(key, sig);
+                });
+                console.log('✅ Loaded signatures from AWS database:', awsSignatures);
+            }
+            
+        } catch (error) {
+            console.log('📡 AWS API not available, loading sample data...');
+            this.loadSampleData();
         }
 
         this.updateLastUpdated();
     }
 
-    // Load sample data for development/demo (YOUR ORIGINAL SAMPLE DATA)
+    // Load sample data for development/demo
     loadSampleData() {
         this.notices = [
             {
@@ -306,60 +327,18 @@ class AKLNoticeBoard {
                 content: 'Scheduled maintenance on all AKL cluster systems this Saturday 2AM-6AM NZST. All non-critical operations should be completed before maintenance window.',
                 category: 'Operations',
                 priority: 'high',
-                author: 'DCEO',
+                author: 'DCEO Manager',
                 createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
                 expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
                 isPinned: true,
                 requiresSignature: false,
                 source: 'TacOps Update',
                 tags: ['maintenance', 'weekend', 'systems']
-            },
-            {
-                id: 'notice_003',
-                title: 'Updated Badge Access Procedures',
-                content: 'New badge access procedures are now in effect. Please ensure you tap your badge at all entry points and report any access issues immediately.',
-                category: 'Policy',
-                priority: 'medium',
-                author: 'Security Team',
-                createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: false,
-                requiresSignature: true,
-                source: 'Security Policy',
-                tags: ['security', 'access', 'policy']
-            },
-            {
-                id: 'notice_004',
-                title: 'TacOps Feedback Summary - Week 47',
-                content: 'Great work this week team! Overall performance metrics are up 15%. Special recognition to AKL53 team for zero incidents this week.',
-                category: 'Feedback',
-                priority: 'low',
-                author: 'TacOps Team',
-                createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: false,
-                requiresSignature: false,
-                source: 'TacOps Spreadsheet',
-                tags: ['feedback', 'performance', 'recognition']
-            },
-            {
-                id: 'notice_005',
-                title: 'System Test',
-                content: 'This is Prototype to showcase the System aka AKL NoticeBoard.',
-                category: 'coffee',
-                priority: 'medium',
-                author: 'coffee',
-                createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: false,
-                requiresSignature: false,
-                source: 'coffee',
-                tags: ['BETA', 'test']
             }
         ];
     }
 
-    // Set current filter (YOUR ORIGINAL METHOD)
+    // Set current filter
     setFilter(filter) {
         this.currentFilter = filter;
         
@@ -374,7 +353,7 @@ class AKLNoticeBoard {
         this.render();
     }
 
-    // Get filtered notices (YOUR ORIGINAL METHOD)
+    // ENHANCED: Get filtered notices with improved sorting
     getFilteredNotices() {
         let filtered = [...this.notices];
 
@@ -396,7 +375,7 @@ class AKLNoticeBoard {
                 break;
             case 'unsigned':
                 filtered = filtered.filter(notice => 
-                    notice.requiresSignature && !this.signatures.has(notice.id)
+                    notice.requiresSignature && !this.isNoticeSigned(notice.id)
                 );
                 break;
             case 'categories':
@@ -408,17 +387,32 @@ class AKLNoticeBoard {
                 break;
         }
 
-        // Sort: pinned first, then by creation date (newest first)
+        // ENHANCED SORTING: Pinned first, then by creation date (newest first)
         filtered.sort((a, b) => {
+            // First priority: pinned notices
             if (a.isPinned && !b.isPinned) return -1;
             if (!a.isPinned && b.isPinned) return 1;
+            
+            // Second priority: creation date (newest first)
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
 
         return filtered;
     }
 
-    // Render the notice board (YOUR ORIGINAL METHOD)
+    // Check if notice is signed by current user
+    isNoticeSigned(noticeId) {
+        const key = `${noticeId}_${this.currentUser.id}`;
+        return this.signatures.has(key);
+    }
+
+    // Get signature info for a notice by current user
+    getSignatureInfo(noticeId) {
+        const key = `${noticeId}_${this.currentUser.id}`;
+        return this.signatures.get(key);
+    }
+
+    // Render the notice board
     render() {
         const filtered = this.getFilteredNotices();
         const noticeBoard = document.getElementById('notice-board');
@@ -447,7 +441,7 @@ class AKLNoticeBoard {
         }
     }
 
-    // Render notices as a list (YOUR ORIGINAL METHOD)
+    // Render notices as a list
     renderNoticeList(notices) {
         const noticeBoard = document.getElementById('notice-board');
         
@@ -457,7 +451,7 @@ class AKLNoticeBoard {
         this.attachSignatureListeners();
     }
 
-    // Render notices grouped by categories (YOUR ORIGINAL METHOD)
+    // Render notices grouped by categories
     renderByCategories(notices) {
         const noticeBoard = document.getElementById('notice-board');
         const categories = {};
@@ -488,11 +482,13 @@ class AKLNoticeBoard {
         this.attachSignatureListeners();
     }
 
-    // Complete the renderNoticeCard method (YOUR ORIGINAL METHOD)
+    // ENHANCED: Complete the renderNoticeCard method with better date formatting
     renderNoticeCard(notice) {
         const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
-        const isSigned = this.signatures.has(notice.id);
+        const isSigned = this.isNoticeSigned(notice.id);
+        const signatureInfo = this.getSignatureInfo(notice.id);
         const timeAgo = this.getTimeAgo(notice.createdAt);
+        const fullDateTime = this.getFullDateTime(notice.createdAt);
         const expiresIn = notice.expiresAt ? this.getExpiresIn(notice.expiresAt) : '';
 
         return `
@@ -510,9 +506,9 @@ class AKLNoticeBoard {
                             ${notice.isPinned ? '<span class="text-amber-400 text-sm font-medium">📌 PINNED</span>' : ''}
                         </div>
                         <h3 class="text-xl font-bold text-slate-100 mb-2">${notice.title}</h3>
-                        <div class="flex items-center space-x-4 text-sm text-slate-400">
+                        <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
                             <span>👤 ${notice.author}</span>
-                            <span>📅 ${timeAgo}</span>
+                            <span title="${fullDateTime}">📅 ${timeAgo}</span>
                             <span>📍 ${notice.source}</span>
                             ${isExpired ? '<span class="text-red-400">⚠️ EXPIRED</span>' : (expiresIn ? `<span>⏰ Expires ${expiresIn}</span>` : '')}
                         </div>
@@ -545,17 +541,17 @@ class AKLNoticeBoard {
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
-                                        <span class="font-medium">Signed by ${this.currentUser.name}</span>
+                                        <span class="font-medium">Acknowledged by ${signatureInfo.userName}</span>
                                     </div>
                                     <div class="text-sm text-slate-400">
-                                        ${this.getTimeAgo(this.signatures.get(notice.id).timestamp)}
+                                        ${this.getTimeAgo(signatureInfo.timestamp)}
                                     </div>
                                 ` : `
                                     <div class="flex items-center space-x-2 text-amber-400">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
                                         </svg>
-                                        <span class="font-medium">Signature Required</span>
+                                        <span class="font-medium">Acknowledgment Required</span>
                                     </div>
                                     <div class="text-sm text-slate-400">
                                         Please acknowledge this notice
@@ -567,7 +563,7 @@ class AKLNoticeBoard {
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                     </svg>
-                                    Sign Notice
+                                    Acknowledge Notice
                                 </button>
                             ` : ''}
                         </div>
@@ -577,7 +573,7 @@ class AKLNoticeBoard {
         `;
     }
 
-    // Helper methods (YOUR ORIGINAL METHODS)
+    // Helper methods
     getPriorityIcon(priority) {
         const icons = {
             critical: '🚨',
@@ -615,6 +611,20 @@ class AKLNoticeBoard {
         return time.toLocaleDateString();
     }
 
+    // NEW: Get full date and time formatting
+    getFullDateTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleString('en-NZ', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Pacific/Auckland'
+        });
+    }
+
     getExpiresIn(timestamp) {
         const now = new Date();
         const expiry = new Date(timestamp);
@@ -628,51 +638,135 @@ class AKLNoticeBoard {
         return `on ${expiry.toLocaleDateString()}`;
     }
 
-    // Signature handling (YOUR ORIGINAL METHODS)
+    // Signature handling
     attachSignatureListeners() {
         document.querySelectorAll('.sign-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const noticeId = e.target.closest('.sign-btn').dataset.noticeId;
-                this.signNotice(noticeId);
+                this.showSignatureModal(noticeId);
             });
         });
     }
 
-    // MODIFIED: Sign notice with AWS backend integration
-    signNotice(noticeId) {
+    // NEW: Show signature modal to collect user name
+    showSignatureModal(noticeId) {
+        const notice = this.notices.find(n => n.id === noticeId);
+        if (!notice) return;
+
+        // Check if already signed
+        if (this.isNoticeSigned(noticeId)) {
+            this.showToast('You have already acknowledged this notice!', 'warning');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content w-full max-w-md">
+                <div class="bg-slate-800 px-6 py-4 border-b border-slate-700">
+                    <h2 class="text-xl font-bold text-slate-100">✍️ Acknowledge Notice</h2>
+                </div>
+                <div class="p-6">
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-slate-200 mb-2">${notice.title}</h3>
+                        <p class="text-sm text-slate-400">Please enter your name/alias to acknowledge this notice:</p>
+                    </div>
+                    <form id="signature-form" class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label">Your Name/Alias *</label>
+                            <input type="text" name="userName" class="form-input" required 
+                                   placeholder="Enter your name or alias" 
+                                   value="${this.currentUser.name}">
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-slate-800 px-6 py-4 border-t border-slate-700 flex justify-end space-x-3">
+                    <button onclick="this.closest('.modal').remove()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="confirmSignature('${noticeId}')" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
+                        ✍️ Acknowledge
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('modal-container').appendChild(modal);
+        
+        // Focus on input
+        setTimeout(() => {
+            const input = modal.querySelector('input[name="userName"]');
+            if (input) input.focus();
+        }, 100);
+    }
+
+    // ENHANCED: Sign notice with user name collection
+    async signNotice(noticeId, userName) {
+        if (!userName || userName.trim() === '') {
+            this.showToast('Please enter your name/alias', 'error');
+            return;
+        }
+
+        // Check if already signed
+        if (this.isNoticeSigned(noticeId)) {
+            this.showToast('You have already acknowledged this notice!', 'warning');
+            return;
+        }
+
         const signature = {
             userId: this.currentUser.id,
-            userName: this.currentUser.name,
+            userName: userName.trim(),
             timestamp: new Date().toISOString()
         };
         
-        // Try to save to AWS first
-        createSignatureInDB({
-            noticeId: noticeId,
-            userId: signature.userId,
-            userName: signature.userName,
-            timestamp: signature.timestamp
-        }).then(awsSignature => {
-            // Use AWS signature if successful
-            this.signatures.set(noticeId, signature);
-            this.saveSignatures();
+        // Update current user name if provided
+        if (userName.trim() !== this.currentUser.name) {
+            this.saveCurrentUser({
+                ...this.currentUser,
+                name: userName.trim()
+            });
+        }
+        
+        try {
+            // Try to save to AWS first
+            await createSignatureInDB({
+                noticeId: noticeId,
+                userId: signature.userId,
+                userName: signature.userName,
+                timestamp: signature.timestamp
+            });
+            
+            // Add to local signatures map
+            const key = `${noticeId}_${signature.userId}`;
+            this.signatures.set(key, signature);
+            
             this.render();
-            this.showToast('Notice signed in database!', 'success');
-        }).catch(error => {
-            // Fallback to local storage
+            this.closeAllModals();
+            this.showToast('Notice acknowledged successfully!', 'success');
+            
+        } catch (error) {
             console.log('AWS signature failed, saving locally:', error);
-            this.signatures.set(noticeId, signature);
+            
+            // Fallback to local storage
+            const key = `${noticeId}_${signature.userId}`;
+            this.signatures.set(key, signature);
             this.saveSignatures();
+            
             this.render();
-            this.showToast('Notice signed locally!', 'warning');
-        });
+            this.closeAllModals();
+            this.showToast('Notice acknowledged locally!', 'warning');
+        }
     }
 
     saveSignatures() {
-        localStorage.setItem('akl_signatures', JSON.stringify([...this.signatures]));
+        const signaturesArray = Array.from(this.signatures.entries()).map(([key, value]) => ({
+            key,
+            ...value
+        }));
+        localStorage.setItem('akl_signatures', JSON.stringify(signaturesArray));
     }
 
-    // Status bar updates (YOUR ORIGINAL METHODS)
+    // Status bar updates
     updateStatusBar(filteredNotices) {
         const totalNoticesEl = document.getElementById('total-notices');
         const unsignedCountEl = document.getElementById('unsigned-count');
@@ -680,7 +774,7 @@ class AKLNoticeBoard {
         if (totalNoticesEl) totalNoticesEl.textContent = this.notices.length;
         
         const unsignedCount = this.notices.filter(notice => 
-            notice.requiresSignature && !this.signatures.has(notice.id)
+            notice.requiresSignature && !this.isNoticeSigned(notice.id)
         ).length;
         if (unsignedCountEl) unsignedCountEl.textContent = unsignedCount;
         
@@ -703,7 +797,7 @@ class AKLNoticeBoard {
         }
     }
 
-    // Filter pills rendering (YOUR ORIGINAL METHOD)
+    // Filter pills rendering
     renderFilterPills() {
         const container = document.getElementById('filter-pills');
         if (!container) return;
@@ -737,7 +831,7 @@ class AKLNoticeBoard {
         container.innerHTML = pills.join('');
     }
 
-    // Auto refresh functionality (YOUR ORIGINAL METHODS)
+    // Auto refresh functionality
     startAutoRefresh() {
         this.autoRefreshInterval = setInterval(() => {
             this.refreshData();
@@ -759,7 +853,7 @@ class AKLNoticeBoard {
         }
     }
 
-    // Toast notifications (YOUR ORIGINAL METHOD)
+    // Toast notifications
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) return;
@@ -791,7 +885,7 @@ class AKLNoticeBoard {
         }, 5000);
     }
 
-    // Modal functionality (YOUR ORIGINAL METHOD)
+    // ENHANCED: Modal functionality with author name collection
     showPostNoticeModal() {
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -802,6 +896,12 @@ class AKLNoticeBoard {
                 </div>
                 <div class="p-6">
                     <form id="post-notice-form" class="space-y-4">
+                        <div class="form-group">
+                            <label class="form-label">Your Name/Alias *</label>
+                            <input type="text" name="author" class="form-input" required 
+                                   placeholder="Enter your name or alias" 
+                                   value="${this.currentUser.name}">
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Title *</label>
                             <input type="text" name="title" class="form-input" required>
@@ -845,7 +945,7 @@ class AKLNoticeBoard {
                             </label>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="requiresSignature" class="rounded">
-                                <span class="text-sm">✍️ Requires signature</span>
+                                <span class="text-sm">✍️ Requires acknowledgment</span>
                             </label>
                         </div>
                     </form>
@@ -862,6 +962,14 @@ class AKLNoticeBoard {
         `;
         
         document.getElementById('modal-container').appendChild(modal);
+        
+        // Focus on author input if empty
+        setTimeout(() => {
+            const authorInput = modal.querySelector('input[name="author"]');
+            if (authorInput && !authorInput.value) {
+                authorInput.focus();
+            }
+        }, 100);
     }
 
     closeAllModals() {
@@ -870,7 +978,7 @@ class AKLNoticeBoard {
     }
 }
 
-// Global helper functions (YOUR ORIGINAL FUNCTIONS)
+// Global helper functions
 function clearSearch() {
     const searchInput = document.getElementById('search-notices');
     if (searchInput) searchInput.value = '';
@@ -891,54 +999,72 @@ function clearAllFilters() {
     clearFilter();
 }
 
-// MODIFIED: Submit notice with AWS backend integration
+// NEW: Confirm signature with name validation
+function confirmSignature(noticeId) {
+    const form = document.getElementById('signature-form');
+    const formData = new FormData(form);
+    const userName = formData.get('userName');
+    
+    if (window.noticeBoard) {
+        window.noticeBoard.signNotice(noticeId, userName);
+    }
+}
+
+// ENHANCED: Submit notice with author name validation
 function submitNotice() {
     const form = document.getElementById('post-notice-form');
     const formData = new FormData(form);
     
+    const authorName = formData.get('author');
+    if (!authorName || authorName.trim() === '') {
+        window.noticeBoard.showToast('Please enter your name/alias', 'error');
+        return;
+    }
+    
     const notice = {
-        id: 'notice_' + Date.now(),
         title: formData.get('title'),
         content: formData.get('content'),
         category: formData.get('category'),
         priority: formData.get('priority'),
-        author: window.noticeBoard.currentUser.name,
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        author: authorName.trim(),
+        source: 'NoticeBoard',
         isPinned: formData.get('isPinned') === 'on',
         requiresSignature: formData.get('requiresSignature') === 'on',
-        source: 'NoticeBoard',
         tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()) : []
     };
     
+    // Update current user name if different
+    if (authorName.trim() !== window.noticeBoard.currentUser.name) {
+        window.noticeBoard.saveCurrentUser({
+            ...window.noticeBoard.currentUser,
+            name: authorName.trim()
+        });
+    }
+    
     // Try to save to AWS first
-    createNoticeInDB({
-        title: notice.title,
-        content: notice.content,
-        category: notice.category,
-        priority: notice.priority,
-        author: notice.author,
-        source: notice.source,
-        isPinned: notice.isPinned,
-        requiresSignature: notice.requiresSignature,
-        tags: notice.tags
-    }).then(awsNotice => {
+    createNoticeInDB(notice).then(awsNotice => {
         // Use AWS notice if successful
         window.noticeBoard.notices.unshift(awsNotice);
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
-        window.noticeBoard.showToast('Notice posted to database successfully!', 'success');
+        window.noticeBoard.showToast('Notice posted successfully!', 'success');
     }).catch(error => {
         // Fallback to local storage
         console.log('AWS save failed, saving locally:', error);
-        window.noticeBoard.notices.unshift(notice);
+        const localNotice = {
+            id: 'notice_' + Date.now(),
+            ...notice,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        window.noticeBoard.notices.unshift(localNotice);
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
         window.noticeBoard.showToast('Notice posted locally!', 'warning');
     });
 }
 
-// Initialize the application (YOUR ORIGINAL INITIALIZATION)
+// Initialize the application
 window.addEventListener('DOMContentLoaded', () => {
     window.noticeBoard = new AKLNoticeBoard();
 });
