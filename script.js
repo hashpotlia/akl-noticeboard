@@ -95,7 +95,7 @@ async function createNoticeInDB(noticeData) {
     }
 }
 
-// Create Signature in Database (RELATIONSHIP-AWARE VERSION)
+// Create Signature in Database (SIMPLE RELATIONSHIP VERSION)
 async function createSignatureInDB(signatureData) {
     const mutation = `
         mutation CreateSignature($input: CreateSignatureInput!) {
@@ -109,10 +109,10 @@ async function createSignatureInDB(signatureData) {
         }
     `;
     
-    // Structure for 1:Many relationship (Notice -> Signatures)
+    // Simple approach - just the core fields
     const variables = {
         input: {
-            noticeId: signatureData.noticeId,  // This links to the Notice
+            noticeId: signatureData.noticeId,
             userId: signatureData.userId,
             userName: signatureData.userName,
             timestamp: signatureData.timestamp
@@ -120,37 +120,18 @@ async function createSignatureInDB(signatureData) {
     };
     
     try {
-        console.log('Creating signature with relationship data:', variables);
         const data = await graphqlRequest(mutation, variables);
-        console.log('Signature created successfully with relationship:', data);
         return data.createSignature;
     } catch (error) {
-        console.error('Relationship signature creation failed:', error);
-        console.error('Input data was:', variables);
-        
-        // If relationship fails, try with explicit connection
-        try {
-            const relationshipVariables = {
-                input: {
-                    noticeId: signatureData.noticeId,
-                    userId: signatureData.userId,
-                    userName: signatureData.userName,
-                    timestamp: signatureData.timestamp,
-                    // Try adding the relationship connection
-                    noticeSignaturesId: signatureData.noticeId
-                }
-            };
-            
-            console.log('Trying with explicit relationship:', relationshipVariables);
-            const relationshipData = await graphqlRequest(mutation, relationshipVariables);
-            return relationshipData.createSignature;
-            
-        } catch (relationshipError) {
-            console.error('Both signature creation methods failed:', relationshipError);
-            throw relationshipError;
-        }
+        console.error('Signature creation error details:', {
+            error: error.message,
+            input: variables.input,
+            noticeId: signatureData.noticeId
+        });
+        throw error;
     }
 }
+
 
 
 // AKL NoticeBoard - Complete Application Logic
