@@ -182,7 +182,7 @@ class NoticeManager {
     }
     
     showLoadingState() {
-        const container = document.getElementById('notices-container');
+        const container = document.getElementById('notice-board');
         if (container) {
             container.innerHTML = '<div class="loading">Loading notices from database...</div>';
         }
@@ -297,7 +297,7 @@ class NoticeManager {
     }
     
     render() {
-        const container = document.getElementById('notices-container');
+        const container = document.getElementById('notice-board');
         if (!container) return;
         
         if (this.notices.length === 0) {
