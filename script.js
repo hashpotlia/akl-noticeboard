@@ -109,8 +109,12 @@ async function createSignatureInDB(signatureData) {
         }
     `;
     
+    // Add an ID to the signature data
     const variables = {
-        input: signatureData
+        input: {
+            id: 'sig-' + Math.random().toString(36).substr(2, 9), // Generate unique ID
+            ...signatureData
+        }
     };
     
     try {
@@ -121,6 +125,7 @@ async function createSignatureInDB(signatureData) {
         throw error;
     }
 }
+
 
 // Fetch Signatures for a Notice
 async function fetchSignaturesForNotice(noticeId) {
@@ -475,6 +480,24 @@ class NoticeManager {
             }
         ];
     }
+}
+
+// Form toggle functionality
+const showFormBtn = document.getElementById('show-form-btn');
+const cancelFormBtn = document.getElementById('cancel-form-btn');
+const formContainer = document.getElementById('notice-form-container');
+
+if (showFormBtn && formContainer) {
+    showFormBtn.addEventListener('click', () => {
+        formContainer.classList.toggle('hidden');
+    });
+}
+
+if (cancelFormBtn && formContainer) {
+    cancelFormBtn.addEventListener('click', () => {
+        formContainer.classList.add('hidden');
+        document.getElementById('notice-form').reset();
+    });
 }
 
 // Initialize NoticeBoard when page loads
