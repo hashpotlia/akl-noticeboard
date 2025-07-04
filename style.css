@@ -503,3 +503,198 @@ button:focus, input:focus, textarea:focus, select:focus {
 .page-loading #notice-board {
     opacity: 0.7;
 }
+
+/* Rich Text Editor Styles */
+.rich-text-editor {
+    background-color: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    color: #e5e7eb;
+}
+
+.rich-text-editor .ql-toolbar {
+    background-color: #1e293b;
+    border-bottom: 1px solid #374151;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.rich-text-editor .ql-container {
+    background-color: #0f172a;
+    border-radius: 0 0 0.5rem 0.5rem;
+    color: #e5e7eb;
+    font-size: 0.875rem;
+    min-height: 120px;
+}
+
+.rich-text-editor .ql-editor {
+    color: #e5e7eb;
+    line-height: 1.6;
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Toolbar button styling */
+.rich-text-editor .ql-toolbar .ql-stroke {
+    stroke: #d1d5db;
+}
+
+.rich-text-editor .ql-toolbar .ql-fill {
+    fill: #d1d5db;
+}
+
+.rich-text-editor .ql-toolbar button:hover .ql-stroke,
+.rich-text-editor .ql-toolbar button.ql-active .ql-stroke {
+    stroke: #f59e0b;
+}
+
+.rich-text-editor .ql-toolbar button:hover .ql-fill,
+.rich-text-editor .ql-toolbar button.ql-active .ql-fill {
+    fill: #f59e0b;
+}
+
+/* Notice content rich text display */
+.notice-content {
+    line-height: 1.6;
+}
+
+.notice-content h1, .notice-content h2, .notice-content h3 {
+    color: #f1f5f9;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem 0;
+}
+
+.notice-content h1 { font-size: 1.5rem; }
+.notice-content h2 { font-size: 1.25rem; }
+.notice-content h3 { font-size: 1.125rem; }
+
+.notice-content ul, .notice-content ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.notice-content li {
+    margin: 0.25rem 0;
+}
+
+.notice-content strong {
+    color: #f1f5f9;
+    font-weight: 600;
+}
+
+.notice-content em {
+    color: #cbd5e1;
+    font-style: italic;
+}
+
+.notice-content blockquote {
+    border-left: 4px solid #f59e0b;
+    margin: 1rem 0;
+    padding-left: 1rem;
+    color: #cbd5e1;
+    font-style: italic;
+}
+
+.notice-content code {
+    background-color: #374151;
+    color: #fbbf24;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875em;
+}
+
+.notice-content pre {
+    background-color: #1e293b;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.notice-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.notice-content a {
+    color: #60a5fa;
+    text-decoration: underline;
+}
+
+.notice-content a:hover {
+    color: #93c5fd;
+}
+
+/* UPDATED: Better Modal Styles with Proper Scrolling */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    animation: fadeIn 0.3s ease-out;
+    padding: 1rem; /* Add padding to prevent edge touching */
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 0;
+    max-width: 90vw;
+    max-height: 90vh; /* Limit height to 90% of viewport */
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Modal Header - Fixed */
+.modal-header {
+    background-color: #1e293b;
+    padding: 1.5rem;
+    border-bottom: 1px solid #334155;
+    flex-shrink: 0; /* Don't shrink */
+}
+
+/* Modal Body - Scrollable */
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto; /* Enable vertical scrolling */
+    flex-grow: 1; /* Take available space */
+    max-height: calc(90vh - 140px); /* Account for header and footer */
+}
+
+/* Modal Footer - Fixed */
+.modal-footer {
+    background-color: #1e293b;
+    padding: 1.5rem;
+    border-top: 1px solid #334155;
+    flex-shrink: 0; /* Don't shrink */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* Rich Text Editor Container - Fixed Height with Internal Scrolling */
+.rich-text-editor {
+    background-color: #0f172a;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    color: #e5e7eb;
+    height: 300px; /* Fixed height */
+    display: flex;
+    flex-direction: column;
+}
+
+.rich-text-

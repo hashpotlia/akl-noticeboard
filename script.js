@@ -167,6 +167,7 @@ class AKLNoticeBoard {
         this.currentUser = this.getCurrentUser();
         this.autoRefreshInterval = null;
         this.isAdmin = false;
+		this.richTextEditor = null;
         
         // Pagination properties
         this.currentPage = 1;
@@ -744,7 +745,7 @@ class AKLNoticeBoard {
     }
 
     // Complete the renderNoticeCard method with better date formatting
-    renderNoticeCard(notice) {
+renderNoticeCard(notice) {
         const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
         const isSigned = this.isNoticeSigned(notice.id);
         const signatureInfo = this.getSignatureInfo(notice.id);
@@ -776,9 +777,9 @@ class AKLNoticeBoard {
                     </div>
                 </div>
 
-                <!-- Notice Content -->
-                <div class="mb-4">
-                    <p class="text-slate-300 leading-relaxed">${notice.content}</p>
+                <!-- Notice Content with Rich Text -->
+                <div class="mb-4 notice-content">
+                    ${this.renderRichTextContent(notice.content)}
                 </div>
 
                 <!-- Tags -->
@@ -832,6 +833,16 @@ class AKLNoticeBoard {
                 ` : ''}
             </div>
         `;
+    }
+	
+	// NEW: Render rich text content
+    renderRichTextContent(content) {
+        // If content contains HTML tags, render as HTML
+        if (content && (content.includes('<') || content.includes('&'))) {
+            return content;
+        }
+        // Otherwise, treat as plain text and convert line breaks
+        return content ? content.replace(/\n/g, '<br>') : '';
     }
 
     // Helper methods
@@ -1146,91 +1157,147 @@ class AKLNoticeBoard {
         }, 5000);
     }
 
-    // Modal functionality with author name collection
-    showPostNoticeModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content w-full max-w-2xl">
-                <div class="bg-slate-800 px-6 py-4 border-b border-slate-700">
-                    <h2 class="text-xl font-bold text-slate-100">📝 Post New Notice</h2>
-                </div>
-                <div class="p-6">
-                    <form id="post-notice-form" class="space-y-4">
-                        <div class="form-group">
-                            <label class="form-label">Your Name/Alias *</label>
-                            <input type="text" name="author" class="form-input" required 
-                                   placeholder="Enter your name or alias" 
-                                   value="${this.currentUser.name}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Title *</label>
-                            <input type="text" name="title" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Content *</label>
-                            <textarea name="content" class="form-textarea" rows="4" required></textarea>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group">
-                                <label class="form-label">Category *</label>
-                                <select name="category" class="form-select" required>
-                                    <option value="">Select Category</option>
-                                    <option value="Safety">🦺 Safety</option>
-                                    <option value="Operations">⚙️ Operations</option>
-                                    <option value="Policy">📜 Policy</option>
-                                    <option value="HR">👥 HR</option>
-                                    <option value="Training">🎓 Training</option>
-                                    <option value="Maintenance">🔧 Maintenance</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Priority *</label>
-                                <select name="priority" class="form-select" required>
-                                    <option value="">Select Priority</option>
-                                    <option value="critical">🚨 Critical</option>
-                                    <option value="high">⚠️ High</option>
-                                    <option value="medium">📋 Medium</option>
-                                    <option value="low">💡 Low</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tags (comma-separated)</label>
-                            <input type="text" name="tags" class="form-input" placeholder="safety, training, mandatory">
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="isPinned" class="rounded">
-                                <span class="text-sm">📌 Pin this notice</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="requiresSignature" class="rounded">
-                                <span class="text-sm">✍️ Requires acknowledgment</span>
-                            </label>
-                        </div>
-                    </form>
-                </div>
-                <div class="bg-slate-800 px-6 py-4 border-t border-slate-700 flex justify-end space-x-3">
-                    <button onclick="this.closest('.modal').remove()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                    <button onclick="submitNotice()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors">
-                        📝 Post Notice
-                    </button>
-                </div>
+// UPDATED: Modal functionality with better structure and scrolling
+showPostNoticeModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content w-full max-w-4xl">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-slate-100">📝 Post New Notice</h2>
             </div>
-        `;
-        
-        document.getElementById('modal-container').appendChild(modal);
-        
-        // Focus on author input if empty
-        setTimeout(() => {
-            const authorInput = modal.querySelector('input[name="author"]');
-            if (authorInput && !authorInput.value) {
-                authorInput.focus();
+            
+            <!-- Modal Body - Scrollable -->
+            <div class="modal-body">
+                <form id="post-notice-form" class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label">Your Name/Alias *</label>
+                        <input type="text" name="author" class="form-input" required 
+                               placeholder="Enter your name or alias" 
+                               value="${this.currentUser.name}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" name="title" class="form-input" required 
+                               placeholder="Enter notice title">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Content *</label>
+                        <div id="rich-text-editor" class="rich-text-editor"></div>
+                        <input type="hidden" name="content" id="hidden-content">
+                        <p class="text-xs text-slate-400 mt-2">
+                            💡 Use the toolbar above to format your content with headers, lists, bold text, and more!
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Category *</label>
+                            <select name="category" class="form-select" required>
+                                <option value="">Select Category</option>
+                                <option value="Safety">🦺 Safety</option>
+                                <option value="Operations">⚙️ Operations</option>
+                                <option value="Policy">📜 Policy</option>
+                                <option value="HR">👥 HR</option>
+                                <option value="Training">🎓 Training</option>
+                                <option value="Maintenance">🔧 Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority *</label>
+                            <select name="priority" class="form-select" required>
+                                <option value="">Select Priority</option>
+                                <option value="critical">🚨 Critical</option>
+                                <option value="high">⚠️ High</option>
+                                <option value="medium">📋 Medium</option>
+                                <option value="low">💡 Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" name="tags" class="form-input" 
+                               placeholder="safety, training, mandatory">
+                        <p class="text-xs text-slate-400 mt-1">
+                            Add tags to help categorize and search for this notice
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="isPinned" class="rounded">
+                            <span class="text-sm">📌 Pin this notice to the top</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="requiresSignature" class="rounded">
+                            <span class="text-sm">✍️ Requires acknowledgment</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button onclick="this.closest('.modal').remove()" 
+                        class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="submitNotice()" 
+                        class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors">
+                    📝 Post Notice
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modal-container').appendChild(modal);
+    
+    // Initialize rich text editor
+    setTimeout(() => {
+        this.initializeRichTextEditor();
+        const authorInput = modal.querySelector('input[name="author"]');
+        if (authorInput && !authorInput.value) {
+            authorInput.focus();
+        }
+    }, 100);
+}
+
+	
+	// NEW: Initialize rich text editor
+    initializeRichTextEditor() {
+        const editorContainer = document.getElementById('rich-text-editor');
+        if (!editorContainer || typeof Quill === 'undefined') return;
+
+        this.richTextEditor = new Quill('#rich-text-editor', {
+            theme: 'snow',
+            placeholder: 'Write your notice content here...',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'indent': '-1'}, { 'indent': '+1' }],
+                    ['blockquote', 'code-block'],
+                    ['link'],
+                    [{ 'align': [] }],
+                    ['clean']
+                ]
             }
-        }, 100);
+        });
+
+        // Set dark theme colors
+        const toolbar = editorContainer.querySelector('.ql-toolbar');
+        const container = editorContainer.querySelector('.ql-container');
+        
+        if (toolbar) {
+            toolbar.style.backgroundColor = '#1e293b';
+            toolbar.style.borderColor = '#374151';
+        }
+        
+        if (container) {
+            container.style.backgroundColor = '#0f172a';
+            container.style.borderColor = '#374151';
+            container.style.color = '#e5e7eb';
+        }
     }
 
     closeAllModals() {
@@ -1282,10 +1349,28 @@ function submitNotice() {
         window.noticeBoard.showToast('Please enter your name/alias', 'error');
         return;
     }
+
+    // Get rich text content
+    let content = '';
+    if (window.noticeBoard.richTextEditor) {
+        content = window.noticeBoard.richTextEditor.root.innerHTML;
+        // Check if editor has actual content (not just empty tags)
+        const textContent = window.noticeBoard.richTextEditor.getText().trim();
+        if (!textContent) {
+            window.noticeBoard.showToast('Please enter notice content', 'error');
+            return;
+        }
+    } else {
+        content = formData.get('content');
+        if (!content || content.trim() === '') {
+            window.noticeBoard.showToast('Please enter notice content', 'error');
+            return;
+        }
+    }
     
     const notice = {
         title: formData.get('title'),
-        content: formData.get('content'),
+        content: content,
         category: formData.get('category'),
         priority: formData.get('priority'),
         author: authorName.trim(),
@@ -1305,14 +1390,12 @@ function submitNotice() {
     
     // Try to save to AWS first
     createNoticeInDB(notice).then(awsNotice => {
-        // Use AWS notice if successful
         window.noticeBoard.notices.unshift(awsNotice);
-        window.noticeBoard.currentPage = 1; // Reset to first page to see new notice
+        window.noticeBoard.currentPage = 1;
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
         window.noticeBoard.showToast('Notice posted successfully!', 'success');
     }).catch(error => {
-        // Fallback to local storage
         console.log('AWS save failed, saving locally:', error);
         const localNotice = {
             id: 'notice_' + Date.now(),
@@ -1321,7 +1404,7 @@ function submitNotice() {
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         };
         window.noticeBoard.notices.unshift(localNotice);
-        window.noticeBoard.currentPage = 1; // Reset to first page to see new notice
+        window.noticeBoard.currentPage = 1;
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
         window.noticeBoard.showToast('Notice posted locally!', 'warning');
