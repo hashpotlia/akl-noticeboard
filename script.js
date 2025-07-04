@@ -161,12 +161,17 @@ class AKLNoticeBoard {
     constructor() {
         this.notices = [];
         this.signatures = new Map();
-        this.allSignatures = []; // Store all signatures from DB
+        this.allSignatures = [];
         this.currentFilter = 'all';
         this.searchQuery = '';
         this.currentUser = this.getCurrentUser();
         this.autoRefreshInterval = null;
         this.isAdmin = false;
+        
+        // Pagination properties
+        this.currentPage = 1;
+        this.itemsPerPage = 10;
+        this.totalPages = 1;
         
         this.init();
     }
@@ -216,6 +221,7 @@ class AKLNoticeBoard {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.searchQuery = e.target.value.toLowerCase();
+                this.currentPage = 1; // Reset to first page when searching
                 this.render();
             });
         }
@@ -261,6 +267,15 @@ class AKLNoticeBoard {
                         e.preventDefault();
                         this.refreshData();
                         break;
+                    // Pagination shortcuts
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.previousPage();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        this.nextPage();
+                        break;
                 }
             }
             if (e.key === 'Escape') {
@@ -269,7 +284,7 @@ class AKLNoticeBoard {
         });
     }
 
-    // ENHANCED: Load data from AWS API with signatures
+    // Load data from AWS API with signatures
     async loadData() {
         try {
             // Load notices and signatures in parallel
@@ -334,13 +349,56 @@ class AKLNoticeBoard {
                 requiresSignature: false,
                 source: 'TacOps Update',
                 tags: ['maintenance', 'weekend', 'systems']
+            },
+            {
+                id: 'notice_003',
+                title: 'Updated Badge Access Procedures',
+                content: 'New badge access procedures are now in effect. Please ensure you tap your badge at all entry points and report any access issues immediately.',
+                category: 'Policy',
+                priority: 'medium',
+                author: 'Security Team',
+                createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                isPinned: false,
+                requiresSignature: true,
+                source: 'Security Policy',
+                tags: ['security', 'access', 'policy']
+            },
+            {
+                id: 'notice_004',
+                title: 'TacOps Feedback Summary - Week 47',
+                content: 'Great work this week team! Overall performance metrics are up 15%. Special recognition to AKL53 team for zero incidents this week.',
+                category: 'Feedback',
+                priority: 'low',
+                author: 'TacOps Team',
+                createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+                expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+                isPinned: false,
+                requiresSignature: false,
+                source: 'TacOps Spreadsheet',
+                tags: ['feedback', 'performance', 'recognition']
+            },
+            {
+                id: 'notice_005',
+                title: 'System Test',
+                content: 'This is Prototype to showcase the System aka AKL NoticeBoard.',
+                category: 'coffee',
+                priority: 'medium',
+                author: 'coffee',
+                createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+                expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+                isPinned: false,
+                requiresSignature: false,
+                source: 'coffee',
+                tags: ['BETA', 'test']
             }
         ];
     }
 
-    // Set current filter
+    // Set current filter with pagination reset
     setFilter(filter) {
         this.currentFilter = filter;
+        this.currentPage = 1; // Reset to first page when changing filters
         
         // Update navigation buttons
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -353,7 +411,7 @@ class AKLNoticeBoard {
         this.render();
     }
 
-    // ENHANCED: Get filtered notices with improved sorting
+    // Get filtered notices with pagination
     getFilteredNotices() {
         let filtered = [...this.notices];
 
@@ -379,7 +437,7 @@ class AKLNoticeBoard {
                 );
                 break;
             case 'categories':
-                // Group by categories - we'll handle this in render
+                // For categories view, we'll handle pagination differently
                 break;
             case 'all':
             default:
@@ -397,6 +455,54 @@ class AKLNoticeBoard {
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
 
+        // Calculate pagination
+        this.totalPages = Math.ceil(filtered.length / this.itemsPerPage);
+        
+        // Ensure current page is valid
+        if (this.currentPage > this.totalPages && this.totalPages > 0) {
+            this.currentPage = this.totalPages;
+        }
+        if (this.currentPage < 1) {
+            this.currentPage = 1;
+        }
+
+        // Apply pagination (except for categories view)
+        if (this.currentFilter !== 'categories') {
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            filtered = filtered.slice(startIndex, endIndex);
+        }
+
+        return filtered;
+    }
+
+    // Get all filtered notices (without pagination) for total count
+    getAllFilteredNotices() {
+        let filtered = [...this.notices];
+
+        // Apply search filter
+        if (this.searchQuery) {
+            filtered = filtered.filter(notice => 
+                notice.title.toLowerCase().includes(this.searchQuery) ||
+                notice.content.toLowerCase().includes(this.searchQuery) ||
+                notice.category.toLowerCase().includes(this.searchQuery) ||
+                notice.author.toLowerCase().includes(this.searchQuery) ||
+                (notice.tags && notice.tags.some(tag => tag.toLowerCase().includes(this.searchQuery)))
+            );
+        }
+
+        // Apply category filter
+        switch (this.currentFilter) {
+            case 'pinned':
+                filtered = filtered.filter(notice => notice.isPinned);
+                break;
+            case 'unsigned':
+                filtered = filtered.filter(notice => 
+                    notice.requiresSignature && !this.isNoticeSigned(notice.id)
+                );
+                break;
+        }
+
         return filtered;
     }
 
@@ -412,22 +518,56 @@ class AKLNoticeBoard {
         return this.signatures.get(key);
     }
 
-    // Render the notice board
+    // Pagination methods
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+            this.render();
+            this.scrollToTop();
+        }
+    }
+
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.render();
+            this.scrollToTop();
+        }
+    }
+
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.render();
+            this.scrollToTop();
+        }
+    }
+
+    scrollToTop() {
+        const noticeBoard = document.getElementById('notice-board');
+        if (noticeBoard) {
+            noticeBoard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Render the notice board with pagination
     render() {
         const filtered = this.getFilteredNotices();
+        const allFiltered = this.getAllFilteredNotices();
         const noticeBoard = document.getElementById('notice-board');
         const emptyState = document.getElementById('empty-state');
 
         if (!noticeBoard) return;
 
         // Update status bar
-        this.updateStatusBar(filtered);
+        this.updateStatusBar(allFiltered);
 
         // Render filter pills
         this.renderFilterPills();
 
-        if (filtered.length === 0) {
+        if (allFiltered.length === 0) {
             noticeBoard.innerHTML = '';
+            this.hidePagination();
             if (emptyState) emptyState.classList.remove('hidden');
             return;
         }
@@ -436,8 +576,10 @@ class AKLNoticeBoard {
 
         if (this.currentFilter === 'categories') {
             this.renderByCategories(filtered);
+            this.hidePagination(); // Categories view doesn't use pagination
         } else {
             this.renderNoticeList(filtered);
+            this.renderPagination(allFiltered.length);
         }
     }
 
@@ -482,7 +624,126 @@ class AKLNoticeBoard {
         this.attachSignatureListeners();
     }
 
-    // ENHANCED: Complete the renderNoticeCard method with better date formatting
+    // Render pagination controls
+    renderPagination(totalItems) {
+        const paginationContainer = document.getElementById('pagination-container');
+        if (!paginationContainer) return;
+
+        if (totalItems <= this.itemsPerPage) {
+            this.hidePagination();
+            return;
+        }
+
+        const startItem = (this.currentPage - 1) * this.itemsPerPage + 1;
+        const endItem = Math.min(this.currentPage * this.itemsPerPage, totalItems);
+
+        // Generate page numbers to show
+        const pageNumbers = this.generatePageNumbers();
+
+        const paginationHtml = `
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+                <!-- Results Info -->
+                <div class="text-sm text-slate-400">
+                    Showing <span class="font-medium text-slate-200">${startItem}</span> to 
+                    <span class="font-medium text-slate-200">${endItem}</span> of 
+                    <span class="font-medium text-slate-200">${totalItems}</span> notices
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="flex items-center space-x-2">
+                    <!-- Previous Button -->
+                    <button onclick="window.noticeBoard.previousPage()" 
+                            class="pagination-btn ${this.currentPage === 1 ? 'disabled' : ''}"
+                            ${this.currentPage === 1 ? 'disabled' : ''}>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Previous
+                    </button>
+
+                    <!-- Page Numbers -->
+                    <div class="flex items-center space-x-1">
+                        ${pageNumbers.map(page => {
+                            if (page === '...') {
+                                return '<span class="px-3 py-2 text-slate-400">...</span>';
+                            }
+                            return `
+                                <button onclick="window.noticeBoard.goToPage(${page})" 
+                                        class="pagination-number ${page === this.currentPage ? 'active' : ''}">
+                                    ${page}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Next Button -->
+                    <button onclick="window.noticeBoard.nextPage()" 
+                            class="pagination-btn ${this.currentPage === this.totalPages ? 'disabled' : ''}"
+                            ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                        Next
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        paginationContainer.innerHTML = paginationHtml;
+        paginationContainer.classList.remove('hidden');
+    }
+
+    // Generate smart page numbers (shows ... for large page counts)
+    generatePageNumbers() {
+        const pages = [];
+        const totalPages = this.totalPages;
+        const current = this.currentPage;
+
+        if (totalPages <= 7) {
+            // Show all pages if 7 or fewer
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Smart pagination for many pages
+            if (current <= 4) {
+                // Near the beginning
+                for (let i = 1; i <= 5; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (current >= totalPages - 3) {
+                // Near the end
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 4; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                // In the middle
+                pages.push(1);
+                pages.push('...');
+                for (let i = current - 1; i <= current + 1; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    }
+
+    // Hide pagination
+    hidePagination() {
+        const paginationContainer = document.getElementById('pagination-container');
+        if (paginationContainer) {
+            paginationContainer.classList.add('hidden');
+        }
+    }
+
+    // Complete the renderNoticeCard method with better date formatting
     renderNoticeCard(notice) {
         const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
         const isSigned = this.isNoticeSigned(notice.id);
@@ -611,7 +872,7 @@ class AKLNoticeBoard {
         return time.toLocaleDateString();
     }
 
-    // NEW: Get full date and time formatting
+    // Get full date and time formatting
     getFullDateTime(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleString('en-NZ', {
@@ -648,7 +909,7 @@ class AKLNoticeBoard {
         });
     }
 
-    // NEW: Show signature modal to collect user name
+    // Show signature modal to collect user name
     showSignatureModal(noticeId) {
         const notice = this.notices.find(n => n.id === noticeId);
         if (!notice) return;
@@ -700,7 +961,7 @@ class AKLNoticeBoard {
         }, 100);
     }
 
-    // ENHANCED: Sign notice with user name collection
+    // Sign notice with user name collection
     async signNotice(noticeId, userName) {
         if (!userName || userName.trim() === '') {
             this.showToast('Please enter your name/alias', 'error');
@@ -766,8 +1027,8 @@ class AKLNoticeBoard {
         localStorage.setItem('akl_signatures', JSON.stringify(signaturesArray));
     }
 
-    // Status bar updates
-    updateStatusBar(filteredNotices) {
+    // Status bar updates with pagination info
+    updateStatusBar(allFilteredNotices) {
         const totalNoticesEl = document.getElementById('total-notices');
         const unsignedCountEl = document.getElementById('unsigned-count');
         
@@ -885,7 +1146,7 @@ class AKLNoticeBoard {
         }, 5000);
     }
 
-    // ENHANCED: Modal functionality with author name collection
+    // Modal functionality with author name collection
     showPostNoticeModal() {
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -984,6 +1245,7 @@ function clearSearch() {
     if (searchInput) searchInput.value = '';
     if (window.noticeBoard) {
         window.noticeBoard.searchQuery = '';
+        window.noticeBoard.currentPage = 1; // Reset to first page
         window.noticeBoard.render();
     }
 }
@@ -999,7 +1261,7 @@ function clearAllFilters() {
     clearFilter();
 }
 
-// NEW: Confirm signature with name validation
+// Confirm signature with name validation
 function confirmSignature(noticeId) {
     const form = document.getElementById('signature-form');
     const formData = new FormData(form);
@@ -1010,7 +1272,7 @@ function confirmSignature(noticeId) {
     }
 }
 
-// ENHANCED: Submit notice with author name validation
+// Submit notice with author name validation
 function submitNotice() {
     const form = document.getElementById('post-notice-form');
     const formData = new FormData(form);
@@ -1045,6 +1307,7 @@ function submitNotice() {
     createNoticeInDB(notice).then(awsNotice => {
         // Use AWS notice if successful
         window.noticeBoard.notices.unshift(awsNotice);
+        window.noticeBoard.currentPage = 1; // Reset to first page to see new notice
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
         window.noticeBoard.showToast('Notice posted successfully!', 'success');
@@ -1058,6 +1321,7 @@ function submitNotice() {
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         };
         window.noticeBoard.notices.unshift(localNotice);
+        window.noticeBoard.currentPage = 1; // Reset to first page to see new notice
         window.noticeBoard.render();
         window.noticeBoard.closeAllModals();
         window.noticeBoard.showToast('Notice posted locally!', 'warning');
