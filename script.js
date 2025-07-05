@@ -1107,7 +1107,7 @@ renderNoticeCard(notice) {
     startAutoRefresh() {
         this.autoRefreshInterval = setInterval(() => {
             this.refreshData();
-        }, 300000); // Refresh every 5 minutes
+        }, 60000); // Refresh every 1 minute
     }
 
     async refreshData() {
