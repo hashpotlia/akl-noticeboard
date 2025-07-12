@@ -33,6 +33,204 @@
 </head>
 
 <body class="antialiased">
+
+<!-- Updated Login modal -->
+<div id="login-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4 border border-slate-700">
+        <div class="text-center mb-6">
+            <div class="text-4xl mb-4">🛠️</div>
+            <h2 class="text-2xl font-bold text-white mb-2">Manager Portal</h2>
+            <p class="text-slate-400" id="auth-subtitle">Please sign in to continue</p>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                <input type="email" id="login-email" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Enter your email">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                <input type="password" id="login-password" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Enter your password">
+            </div>
+            
+            <button type="submit" id="login-btn" 
+                    class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                🔐 Sign In
+            </button>
+        </form>
+
+        <!-- Signup Form (Initially Hidden) -->
+        <form id="signup-form" class="space-y-4 hidden">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                <input type="email" id="signup-email" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Enter your email">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                <input type="password" id="signup-password" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Create a password (min 8 characters)">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+                <input type="password" id="signup-confirm-password" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Confirm your password">
+            </div>
+            
+            <button type="submit" id="signup-btn" 
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                ✨ Create Account
+            </button>
+        </form>
+		
+		<!-- Signup Confirmation Form (Initially Hidden) -->
+<form id="signup-confirm-form" class="space-y-4 hidden">
+    <div class="text-center mb-4">
+        <div class="text-4xl mb-2">📧</div>
+        <p class="text-sm text-slate-400">We've sent a verification code to your email</p>
+        <p class="text-xs text-slate-500 mt-1">Check your inbox and spam folder</p>
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+        <input type="text" id="signup-code" required 
+               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+               placeholder="Enter 6-digit code"
+               maxlength="6">
+    </div>
+    
+    <button type="submit" id="signup-confirm-btn" 
+            class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+        ✅ Verify Account
+    </button>
+    
+    <div class="text-center">
+        <p class="text-sm text-slate-400 mb-2">Didn't receive the code?</p>
+        <button type="button" id="resend-signup-code-btn" 
+                class="text-blue-400 hover:text-blue-300 text-sm transition-colors">
+            📧 Resend Code
+        </button>
+    </div>
+</form>
+
+
+        <!-- Password Reset Form (Initially Hidden) -->
+        <form id="reset-form" class="space-y-4 hidden">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                <input type="email" id="reset-email" required 
+                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       placeholder="Enter your email">
+            </div>
+            
+            <button type="submit" id="reset-btn" 
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                📧 Send Reset Link
+            </button>
+        </form>
+		
+		<!-- Password Reset Confirmation Form (Initially Hidden) -->
+<form id="reset-confirm-form" class="space-y-4 hidden">
+    <div class="text-center mb-4">
+        <p class="text-sm text-slate-400">Enter the verification code sent to your email</p>
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+        <input type="text" id="reset-code" required 
+               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+               placeholder="Enter 6-digit code">
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+        <input type="password" id="reset-new-password" required 
+               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+               placeholder="Enter new password (min 8 characters)">
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
+        <input type="password" id="reset-confirm-password" required 
+               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+               placeholder="Confirm new password">
+    </div>
+    
+    <button type="submit" id="reset-confirm-btn" 
+            class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+        🔐 Reset Password
+    </button>
+</form>
+
+        
+        <div id="login-error" class="mt-4 p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-300 text-sm hidden"></div>
+        
+        <!-- Auth Mode Switcher -->
+        <div class="mt-6 text-center space-y-2">
+            <div id="login-mode-switcher">
+                <button type="button" id="show-signup" class="text-green-400 hover:text-green-300 text-sm transition-colors mr-4">
+                    ✨ Create Account
+                </button>
+                <button type="button" id="show-reset" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">
+                    🔑 Forgot Password?
+                </button>
+            </div>
+            
+            <div id="signup-mode-switcher" class="hidden">
+                <button type="button" id="back-to-login" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+                    ← Back to Sign In
+                </button>
+            </div>
+            
+            <div id="reset-mode-switcher" class="hidden">
+                <button type="button" id="back-to-login-2" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+                    ← Back to Sign In
+                </button>
+            </div>
+			
+			<div id="reset-confirm-mode-switcher" class="hidden">
+    <button type="button" id="back-to-reset" class="text-blue-400 hover:text-blue-300 text-sm transition-colors mr-4">
+        ← Back to Reset
+    </button>
+    <button type="button" id="back-to-login-3" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+        ← Back to Sign In
+    </button>
+</div>
+
+<div id="signup-confirm-mode-switcher" class="hidden">
+    <button type="button" id="back-to-signup" class="text-green-400 hover:text-green-300 text-sm transition-colors mr-4">
+        ← Back to Sign Up
+    </button>
+    <button type="button" id="back-to-login-4" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+        ← Back to Sign In
+    </button>
+</div>
+
+
+			
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="../index.html" class="text-slate-500 hover:text-slate-400 text-sm transition-colors">
+                ← Back to Notice Board
+            </a>
+        </div>
+    </div>
+</div>
+
+
+
     <div id="admin-app" class="min-h-screen bg-slate-900 text-slate-300 flex flex-col">
 
         <!-- Admin Header -->
@@ -78,10 +276,18 @@
                             </svg>
                             <span class="hidden md:inline">Home</span>
                         </a>
+						
+						<!-- Log out -->
+<div class="flex items-center space-x-4">
+    <button id="logout-btn" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+        🚪 Logout
+    </button>
+</div>
+
 
                         <!-- Admin Info -->
                         <div class="text-sm text-slate-400">
-                            Manager: <span id="admin-name" class="text-amber-400 font-semibold">Loading...</span>
+                            User: <span id="admin-name" class="text-amber-400 font-semibold">Loading...</span>
                         </div>
 
                         <!-- Mobile Menu -->

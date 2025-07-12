@@ -1,3 +1,390 @@
+// Simple Cognito Authentication (No Amplify needed)
+class SimpleCognitoAuth {
+    constructor() {
+        this.clientId = '1n7mfqu9hgg7qplf3j95mbcnus';
+        this.currentUser = null;
+        this.accessToken = null;
+    }
+
+    async signIn(email, password) {
+        try {
+            console.log('🔐 Attempting sign in...');
+            
+            const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-amz-json-1.1',
+                    'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth'
+                },
+                body: JSON.stringify({
+                    ClientId: this.clientId,
+                    AuthFlow: 'USER_PASSWORD_AUTH',
+                    AuthParameters: {
+                        USERNAME: email,
+                        PASSWORD: password
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            console.log('📋 Sign in response:', result);
+            
+            if (result.AuthenticationResult) {
+                // Success - store user info
+                this.accessToken = result.AuthenticationResult.AccessToken;
+                this.currentUser = {
+                    email: email,
+                    accessToken: this.accessToken,
+                    idToken: result.AuthenticationResult.IdToken,
+                    refreshToken: result.AuthenticationResult.RefreshToken
+                };
+                
+                // Store in localStorage for persistence
+                localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+                
+                console.log('✅ Sign in successful');
+                return { success: true, user: this.currentUser };
+            }
+            
+            if (result.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
+                // Handle password challenge
+                return { 
+                    success: false, 
+                    challenge: 'NEW_PASSWORD_REQUIRED',
+                    session: result.Session,
+                    message: 'New password required'
+                };
+            }
+            
+            return { 
+                success: false, 
+                message: result.message || 'Authentication failed' 
+            };
+            
+        } catch (error) {
+            console.error('❌ Sign in error:', error);
+            return { 
+                success: false, 
+                message: `Network error: ${error.message}` 
+            };
+        }
+    }
+
+    async setNewPassword(email, newPassword, session) {
+        try {
+            console.log('🔄 Setting new password...');
+            
+            const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-amz-json-1.1',
+                    'X-Amz-Target': 'AWSCognitoIdentityProviderService.RespondToAuthChallenge'
+                },
+                body: JSON.stringify({
+                    ClientId: this.clientId,
+                    ChallengeName: 'NEW_PASSWORD_REQUIRED',
+                    Session: session,
+                    ChallengeResponses: {
+                        USERNAME: email,
+                        NEW_PASSWORD: newPassword
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            console.log('📋 Password challenge response:', result);
+            
+            if (result.AuthenticationResult) {
+                // Success - store user info
+                this.accessToken = result.AuthenticationResult.AccessToken;
+                this.currentUser = {
+                    email: email,
+                    accessToken: this.accessToken,
+                    idToken: result.AuthenticationResult.IdToken,
+                    refreshToken: result.AuthenticationResult.RefreshToken
+                };
+                
+                // Store in localStorage
+                localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+                
+                console.log('✅ Password set and authentication completed');
+                return { success: true, user: this.currentUser };
+            }
+            
+            return { 
+                success: false, 
+                message: result.message || 'Failed to set password' 
+            };
+            
+        } catch (error) {
+            console.error('❌ Set password error:', error);
+            return { 
+                success: false, 
+                message: `Network error: ${error.message}` 
+            };
+        }
+    }
+
+    async getCurrentUser() {
+        // Check localStorage first
+        const storedUser = localStorage.getItem('akl_auth_user');
+        if (storedUser) {
+            try {
+                this.currentUser = JSON.parse(storedUser);
+                this.accessToken = this.currentUser.accessToken;
+                
+                // TODO: Validate token is still valid
+                console.log('✅ User restored from storage');
+                return this.currentUser;
+            } catch (error) {
+                console.log('❌ Invalid stored user data');
+                localStorage.removeItem('akl_auth_user');
+            }
+        }
+        
+        return null;
+    }
+
+    signOut() {
+        this.currentUser = null;
+        this.accessToken = null;
+        localStorage.removeItem('akl_auth_user');
+        console.log('✅ Signed out');
+    }
+
+    isAuthenticated() {
+        return this.currentUser !== null && this.accessToken !== null;
+    }
+	
+	// Add these methods to your SimpleCognitoAuth class
+
+async signUp(email, password) {
+    try {
+        console.log('✨ Attempting sign up...');
+        
+        const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.SignUp'
+            },
+            body: JSON.stringify({
+                ClientId: this.clientId,
+                Username: email,
+                Password: password,
+                UserAttributes: [
+                    {
+                        Name: 'email',
+                        Value: email
+                    }
+                ]
+            })
+        });
+        
+        const result = await response.json();
+        console.log('📋 Sign up response:', result);
+        
+        if (result.UserSub) {
+            console.log('✅ Sign up successful - confirmation needed');
+            return { 
+                success: true, 
+                needsConfirmation: true,
+                message: 'Account created! Please check your email for confirmation code.' 
+            };
+        }
+        
+        return { 
+            success: false, 
+            message: result.message || 'Sign up failed' 
+        };
+        
+    } catch (error) {
+        console.error('❌ Sign up error:', error);
+        return { 
+            success: false, 
+            message: `Network error: ${error.message}` 
+        };
+    }
+}
+
+async resetPassword(email) {
+    try {
+        console.log('🔑 Attempting password reset...');
+        
+        const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ForgotPassword'
+            },
+            body: JSON.stringify({
+                ClientId: this.clientId,
+                Username: email
+            })
+        });
+        
+        const result = await response.json();
+        console.log('📋 Password reset response:', result);
+        
+        if (result.CodeDeliveryDetails) {
+            console.log('✅ Password reset code sent');
+            return { 
+                success: true, 
+                message: 'Password reset code sent to your email!' 
+            };
+        }
+        
+        return { 
+            success: false, 
+            message: result.message || 'Password reset failed' 
+        };
+        
+    } catch (error) {
+        console.error('❌ Password reset error:', error);
+        return { 
+            success: false, 
+            message: `Network error: ${error.message}` 
+        };
+    }
+}
+
+// Add this method to your SimpleCognitoAuth class
+async confirmPasswordReset(email, confirmationCode, newPassword) {
+    try {
+        console.log('🔐 Confirming password reset...');
+        
+        const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmForgotPassword'
+            },
+            body: JSON.stringify({
+                ClientId: this.clientId,
+                Username: email,
+                ConfirmationCode: confirmationCode,
+                Password: newPassword
+            })
+        });
+        
+        const result = await response.json();
+        console.log('📋 Password reset confirmation response:', result);
+        
+        if (response.ok && !result.message) {
+            console.log('✅ Password reset completed successfully');
+            return { 
+                success: true, 
+                message: 'Password reset successfully! You can now sign in with your new password.' 
+            };
+        }
+        
+        return { 
+            success: false, 
+            message: result.message || 'Password reset confirmation failed' 
+        };
+        
+    } catch (error) {
+        console.error('❌ Password reset confirmation error:', error);
+        return { 
+            success: false, 
+            message: `Network error: ${error.message}` 
+        };
+    }
+}
+
+// Add this method to your SimpleCognitoAuth class
+async confirmSignUp(email, confirmationCode) {
+    try {
+        console.log('✅ Confirming sign up...');
+        
+        const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ConfirmSignUp'
+            },
+            body: JSON.stringify({
+                ClientId: this.clientId,
+                Username: email,
+                ConfirmationCode: confirmationCode
+            })
+        });
+        
+        const result = await response.json();
+        console.log('📋 Sign up confirmation response:', result);
+        
+        if (response.ok && !result.message) {
+            console.log('✅ Account confirmed successfully');
+            return { 
+                success: true, 
+                message: 'Account verified successfully! You can now sign in.' 
+            };
+        }
+        
+        return { 
+            success: false, 
+            message: result.message || 'Account verification failed' 
+        };
+        
+    } catch (error) {
+        console.error('❌ Sign up confirmation error:', error);
+        return { 
+            success: false, 
+            message: `Network error: ${error.message}` 
+        };
+    }
+}
+
+// Add resend confirmation code method
+async resendConfirmationCode(email) {
+    try {
+        console.log('📧 Resending confirmation code...');
+        
+        const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': 'AWSCognitoIdentityProviderService.ResendConfirmationCode'
+            },
+            body: JSON.stringify({
+                ClientId: this.clientId,
+                Username: email
+            })
+        });
+        
+        const result = await response.json();
+        console.log('📋 Resend confirmation response:', result);
+        
+        if (result.CodeDeliveryDetails) {
+            console.log('✅ Confirmation code resent');
+            return { 
+                success: true, 
+                message: 'Verification code sent to your email!' 
+            };
+        }
+        
+        return { 
+            success: false, 
+            message: result.message || 'Failed to resend code' 
+        };
+        
+    } catch (error) {
+        console.error('❌ Resend confirmation error:', error);
+        return { 
+            success: false, 
+            message: `Network error: ${error.message}` 
+        };
+    }
+}
+
+
+	
+}
+
+// Initialize the auth system
+const cognitoAuth = new SimpleCognitoAuth();
+
+
 // AWS Backend Integration - Same as main app
 const GRAPHQL_ENDPOINT = 'https://3gaukjf6ezdkdl3eisa4ufpka4.appsync-api.us-east-1.amazonaws.com/graphql';
 const API_KEY = 'da2-ewcwzm2sw5fxlen46lmrzipz7m';
@@ -150,7 +537,8 @@ class AKLAdminPanel {
         this.notices = [];
         this.signatures = [];
         this.currentTab = 'dashboard';
-        this.currentUser = this.getCurrentUser();
+        this.currentUser = null;
+        this.isAuthenticated = false;
         this.autoRefreshInterval = null;
         this.richTextEditor = null;
         
@@ -160,27 +548,319 @@ class AKLAdminPanel {
         this.priorityFilter = '';
         this.statusFilter = '';
         
-        this.init();
+        // Initialize with simple auth
+        this.initializeAuth();
     }
 
-    // Get current user (admin/manager)
-    getCurrentUser() {
-        return {
-            id: localStorage.getItem('akl_admin_id') || 'admin_' + Math.random().toString(36).substr(2, 9),
-            name: localStorage.getItem('akl_admin_name') || 'Manager',
-            role: 'manager'
-        };
+    async initializeAuth() {
+        console.log('🔍 Checking authentication status...');
+        
+        // Check if user is already authenticated
+        const user = await cognitoAuth.getCurrentUser();
+        if (user) {
+            this.currentUser = user;
+            this.isAuthenticated = true;
+            this.hideLoginModal();
+            this.init();
+        } else {
+            this.showLoginModal();
+        }
     }
 
-    // Save current user
-    saveCurrentUser(userData) {
-        localStorage.setItem('akl_admin_id', userData.id);
-        localStorage.setItem('akl_admin_name', userData.name);
-        this.currentUser = userData;
+    // Show login modal
+    showLoginModal() {
+        console.log('📱 Showing login modal...');
+        const loginModal = document.getElementById('login-modal');
+        const adminApp = document.getElementById('admin-app');
+        
+        if (loginModal) {
+            loginModal.classList.remove('hidden');
+            loginModal.style.display = 'flex';
+        }
+        if (adminApp) {
+            adminApp.style.display = 'none';
+        }
+        
+        this.setupLoginHandlers();
     }
 
-    // Initialize the admin panel
+    // Hide login modal
+    hideLoginModal() {
+        console.log('✅ Hiding login modal...');
+        const loginModal = document.getElementById('login-modal');
+        const adminApp = document.getElementById('admin-app');
+        
+        if (loginModal) {
+            loginModal.classList.add('hidden');
+            loginModal.style.display = 'none';
+        }
+        if (adminApp) {
+            adminApp.style.display = 'flex';
+        }
+    }
+
+    // Setup login form handlers
+setupLoginHandlers() {
+    // Setup mode switching
+    this.setupAuthModeSwitching();
+    
+    // Login form
+    const loginForm = document.getElementById('login-form');
+    loginForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleLogin();
+    });
+    
+    // Signup form
+    const signupForm = document.getElementById('signup-form');
+    signupForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleSignup();
+    });
+    
+    // Reset form
+    const resetForm = document.getElementById('reset-form');
+    resetForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handlePasswordReset();
+    });
+    
+    // NEW: Reset confirmation form
+    const resetConfirmForm = document.getElementById('reset-confirm-form');
+    resetConfirmForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handlePasswordResetConfirm();
+    });
+	
+	    // NEW: Signup confirmation form
+    const signupConfirmForm = document.getElementById('signup-confirm-form');
+    signupConfirmForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleSignupConfirm();
+    });
+    
+    // NEW: Resend signup code button
+    const resendSignupCodeBtn = document.getElementById('resend-signup-code-btn');
+    resendSignupCodeBtn?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await this.handleResendSignupCode();
+    });
+}
+
+
+async handleSignup() {
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm-password').value;
+    const signupBtn = document.getElementById('signup-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!email || !password || !confirmPassword) {
+        this.showError('Please fill in all fields', errorDiv);
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        this.showError('Passwords do not match', errorDiv);
+        return;
+    }
+    
+    if (password.length < 8) {
+        this.showError('Password must be at least 8 characters long', errorDiv);
+        return;
+    }
+    
+    try {
+        signupBtn.textContent = '✨ Creating Account...';
+        signupBtn.disabled = true;
+        errorDiv.classList.add('hidden');
+        
+        const result = await cognitoAuth.signUp(email, password);
+        
+        if (result.success) {
+            this.showSuccess(result.message, errorDiv);
+            
+            // Store email and password for confirmation step
+            this.signupEmail = email;
+            this.signupPassword = password;
+            
+            // Switch to confirmation form after short delay
+            setTimeout(() => {
+                this.switchAuthMode('signup-confirm');
+            }, 2000);
+        } else {
+            this.showError(result.message, errorDiv);
+        }
+        
+    } catch (error) {
+        console.error('❌ Signup error:', error);
+        this.showError('Signup failed. Please try again.', errorDiv);
+    } finally {
+        signupBtn.textContent = '✨ Create Account';
+        signupBtn.disabled = false;
+    }
+}
+
+
+async handlePasswordReset() {
+    const email = document.getElementById('reset-email').value;
+    const resetBtn = document.getElementById('reset-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!email) {
+        this.showError('Please enter your email address', errorDiv);
+        return;
+    }
+    
+    try {
+        resetBtn.textContent = '📧 Sending...';
+        resetBtn.disabled = true;
+        errorDiv.classList.add('hidden');
+        
+        const result = await cognitoAuth.resetPassword(email);
+        
+        if (result.success) {
+            // Show success and switch to confirmation form
+            this.showSuccess(result.message, errorDiv);
+            
+            // Store email for confirmation step
+            this.resetEmail = email;
+            
+            // Switch to confirmation form after short delay
+            setTimeout(() => {
+                this.switchAuthMode('reset-confirm');
+            }, 2000);
+        } else {
+            this.showError(result.message, errorDiv);
+        }
+        
+    } catch (error) {
+        console.error('❌ Password reset error:', error);
+        this.showError('Password reset failed. Please try again.', errorDiv);
+    } finally {
+        resetBtn.textContent = '📧 Send Reset Link';
+        resetBtn.disabled = false;
+    }
+}
+
+
+showSuccess(message, errorDiv) {
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.className = 'mt-4 p-3 bg-green-900/50 border border-green-500 rounded-lg text-green-300 text-sm';
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+
+    async handleLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const loginBtn = document.getElementById('login-btn');
+        const errorDiv = document.getElementById('login-error');
+        
+        if (!email || !password) {
+            this.showError('Please enter both email and password', errorDiv);
+            return;
+        }
+        
+        try {
+            loginBtn.textContent = '🔄 Signing in...';
+            loginBtn.disabled = true;
+            errorDiv.classList.add('hidden');
+            
+            const result = await cognitoAuth.signIn(email, password);
+            
+            if (result.success) {
+                console.log('✅ Login successful');
+                this.currentUser = result.user;
+                this.isAuthenticated = true;
+                this.hideLoginModal();
+                this.init();
+                
+            } else if (result.challenge === 'NEW_PASSWORD_REQUIRED') {
+                // Handle password challenge
+                const newPassword = prompt('🔐 Please enter a new password (minimum 8 characters):');
+                
+                if (newPassword && newPassword.length >= 8) {
+                    loginBtn.textContent = '🔄 Setting password...';
+                    
+                    const passwordResult = await cognitoAuth.setNewPassword(email, newPassword, result.session);
+                    
+                    if (passwordResult.success) {
+                        console.log('✅ Password set and login successful');
+                        this.currentUser = passwordResult.user;
+                        this.isAuthenticated = true;
+                        
+                        // Update password field
+                        document.getElementById('login-password').value = newPassword;
+                        
+                        this.hideLoginModal();
+                        this.init();
+                    } else {
+                        this.showError(passwordResult.message, errorDiv);
+                    }
+                } else {
+                    this.showError('Password must be at least 8 characters long', errorDiv);
+                }
+                
+            } else {
+                this.showError(result.message, errorDiv);
+            }
+            
+        } catch (error) {
+            console.error('❌ Login error:', error);
+            this.showError('Login failed. Please try again.', errorDiv);
+        } finally {
+            loginBtn.textContent = '🔐 Sign In';
+            loginBtn.disabled = false;
+        }
+    }
+
+    showError(message, errorDiv) {
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
+// Enhanced logout method
+logout() {
+    console.log('🚪 Logging out user...');
+    
+    // Clear authentication
+    cognitoAuth.signOut();
+    this.isAuthenticated = false;
+    this.currentUser = null;
+    
+    // Clear any intervals
+    if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+        this.autoRefreshInterval = null;
+    }
+    
+    // Clear any modals
+    this.closeAllModals();
+    
+    // Show success message
+    this.showToast('Successfully logged out!', 'success');
+    
+    // Small delay to show the toast, then redirect to login
+    setTimeout(() => {
+        this.showLoginModal();
+    }, 1000);
+    
+    console.log('✅ Logout completed');
+}
+
+
+    // Modified init method
     async init() {
+        if (!this.isAuthenticated) {
+            this.showLoginModal();
+            return;
+        }
+
         console.log('🚀 Initializing AKL Admin Panel...');
         
         this.setupEventListeners();
@@ -191,11 +871,18 @@ class AKLAdminPanel {
         // Set admin name
         const adminNameEl = document.getElementById('admin-name');
         if (adminNameEl) {
-            adminNameEl.textContent = this.currentUser.name || 'Manager';
+            adminNameEl.textContent = this.currentUser.email || 'Manager';
         }
+		
+		this.setupLogoutButton();
         
         console.log('✅ AKL Admin Panel initialized successfully');
     }
+
+
+
+
+
 
 
     // Setup all event listeners
@@ -3004,6 +3691,244 @@ class AKLAdminPanel {
     }
 
 
+// Add this method to your AKLAdminPanel class
+
+setupAuthModeSwitching() {
+    // Show signup form
+    document.getElementById('show-signup')?.addEventListener('click', () => {
+        this.switchAuthMode('signup');
+    });
+    
+    // Show reset form
+    document.getElementById('show-reset')?.addEventListener('click', () => {
+        this.switchAuthMode('reset');
+    });
+    
+    // Back to login buttons
+    document.getElementById('back-to-login')?.addEventListener('click', () => {
+        this.switchAuthMode('login');
+    });
+    
+    document.getElementById('back-to-login-2')?.addEventListener('click', () => {
+        this.switchAuthMode('login');
+    });
+	
+	    // NEW: Back to login from reset confirm
+    document.getElementById('back-to-login-3')?.addEventListener('click', () => {
+        this.switchAuthMode('login');
+    });
+    
+    // NEW: Back to reset from confirm
+    document.getElementById('back-to-reset')?.addEventListener('click', () => {
+        this.switchAuthMode('reset');
+    });
+	
+	    // NEW: Back to login from signup confirm
+    document.getElementById('back-to-login-4')?.addEventListener('click', () => {
+        this.switchAuthMode('login');
+    });
+    
+    // NEW: Back to signup from confirm
+    document.getElementById('back-to-signup')?.addEventListener('click', () => {
+        this.switchAuthMode('signup');
+    });
+    
+}
+
+switchAuthMode(mode) {
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const signupConfirmForm = document.getElementById('signup-confirm-form'); // NEW
+    const resetForm = document.getElementById('reset-form');
+    const resetConfirmForm = document.getElementById('reset-confirm-form');
+    const subtitle = document.getElementById('auth-subtitle');
+    
+    const loginSwitcher = document.getElementById('login-mode-switcher');
+    const signupSwitcher = document.getElementById('signup-mode-switcher');
+    const signupConfirmSwitcher = document.getElementById('signup-confirm-mode-switcher'); // NEW
+    const resetSwitcher = document.getElementById('reset-mode-switcher');
+    const resetConfirmSwitcher = document.getElementById('reset-confirm-mode-switcher');
+    
+    const errorDiv = document.getElementById('login-error');
+    
+    // Hide all forms and switchers
+    [loginForm, signupForm, signupConfirmForm, resetForm, resetConfirmForm].forEach(form => form?.classList.add('hidden'));
+    [loginSwitcher, signupSwitcher, signupConfirmSwitcher, resetSwitcher, resetConfirmSwitcher].forEach(switcher => switcher?.classList.add('hidden'));
+    errorDiv?.classList.add('hidden');
+    
+    // Show appropriate form and switcher
+    switch(mode) {
+        case 'signup':
+            signupForm?.classList.remove('hidden');
+            signupSwitcher?.classList.remove('hidden');
+            subtitle.textContent = 'Create your account';
+            break;
+        case 'signup-confirm': // NEW
+            signupConfirmForm?.classList.remove('hidden');
+            signupConfirmSwitcher?.classList.remove('hidden');
+            subtitle.textContent = 'Verify your account';
+            break;
+        case 'reset':
+            resetForm?.classList.remove('hidden');
+            resetSwitcher?.classList.remove('hidden');
+            subtitle.textContent = 'Reset your password';
+            break;
+        case 'reset-confirm':
+            resetConfirmForm?.classList.remove('hidden');
+            resetConfirmSwitcher?.classList.remove('hidden');
+            subtitle.textContent = 'Enter verification code';
+            break;
+        default: // login
+            loginForm?.classList.remove('hidden');
+            loginSwitcher?.classList.remove('hidden');
+            subtitle.textContent = 'Please sign in to continue';
+    }
+}
+
+
+
+// logout class
+setupLogoutButton() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        // Remove any existing listeners to prevent duplicates
+        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+        
+        // Get the new button reference and add listener
+        const newLogoutBtn = document.getElementById('logout-btn');
+        newLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🚪 Logout button clicked');
+            this.logout();
+        });
+        
+        console.log('✅ Logout button event listener attached');
+    } else {
+        console.warn('⚠️ Logout button not found');
+    }
+}
+
+async handlePasswordResetConfirm() {
+    const confirmationCode = document.getElementById('reset-code').value;
+    const newPassword = document.getElementById('reset-new-password').value;
+    const confirmPassword = document.getElementById('reset-confirm-password').value;
+    const confirmBtn = document.getElementById('reset-confirm-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!confirmationCode || !newPassword || !confirmPassword) {
+        this.showError('Please fill in all fields', errorDiv);
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        this.showError('Passwords do not match', errorDiv);
+        return;
+    }
+    
+    if (newPassword.length < 8) {
+        this.showError('Password must be at least 8 characters long', errorDiv);
+        return;
+    }
+    
+    try {
+        confirmBtn.textContent = '🔐 Resetting...';
+        confirmBtn.disabled = true;
+        errorDiv.classList.add('hidden');
+        
+        const result = await cognitoAuth.confirmPasswordReset(
+            this.resetEmail, 
+            confirmationCode, 
+            newPassword
+        );
+        
+        if (result.success) {
+            this.showSuccess(result.message, errorDiv);
+            
+            // Auto-fill login form and switch back
+            setTimeout(() => {
+                this.switchAuthMode('login');
+                document.getElementById('login-email').value = this.resetEmail;
+                document.getElementById('login-password').value = newPassword;
+            }, 2000);
+        } else {
+            this.showError(result.message, errorDiv);
+        }
+        
+    } catch (error) {
+        console.error('❌ Password reset confirmation error:', error);
+        this.showError('Password reset failed. Please try again.', errorDiv);
+    } finally {
+        confirmBtn.textContent = '🔐 Reset Password';
+        confirmBtn.disabled = false;
+    }
+}
+
+async handleSignupConfirm() {
+    const confirmationCode = document.getElementById('signup-code').value;
+    const confirmBtn = document.getElementById('signup-confirm-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!confirmationCode) {
+        this.showError('Please enter the verification code', errorDiv);
+        return;
+    }
+    
+    try {
+        confirmBtn.textContent = '✅ Verifying...';
+        confirmBtn.disabled = true;
+        errorDiv.classList.add('hidden');
+        
+        const result = await cognitoAuth.confirmSignUp(
+            this.signupEmail, 
+            confirmationCode
+        );
+        
+        if (result.success) {
+            this.showSuccess(result.message, errorDiv);
+            
+            // Auto-fill login form and switch back
+            setTimeout(() => {
+                this.switchAuthMode('login');
+                document.getElementById('login-email').value = this.signupEmail;
+                document.getElementById('login-password').value = this.signupPassword;
+            }, 2000);
+        } else {
+            this.showError(result.message, errorDiv);
+        }
+        
+    } catch (error) {
+        console.error('❌ Signup confirmation error:', error);
+        this.showError('Account verification failed. Please try again.', errorDiv);
+    } finally {
+        confirmBtn.textContent = '✅ Verify Account';
+        confirmBtn.disabled = false;
+    }
+}
+
+async handleResendSignupCode() {
+    const resendBtn = document.getElementById('resend-signup-code-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    try {
+        resendBtn.textContent = '📧 Sending...';
+        resendBtn.disabled = true;
+        
+        const result = await cognitoAuth.resendConfirmationCode(this.signupEmail);
+        
+        if (result.success) {
+            this.showSuccess(result.message, errorDiv);
+        } else {
+            this.showError(result.message, errorDiv);
+        }
+        
+    } catch (error) {
+        console.error('❌ Resend code error:', error);
+        this.showError('Failed to resend code. Please try again.', errorDiv);
+    } finally {
+        resendBtn.textContent = '📧 Resend Code';
+        resendBtn.disabled = false;
+    }
+}
 
 
 
