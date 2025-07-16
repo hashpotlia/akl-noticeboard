@@ -817,3 +817,57 @@
     z-index: 70; /* Higher than regular modals (50) */
     animation: confirmationFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Enhanced Navigation Layout */
+.admin-tab {
+    padding: 0.75rem 1rem; /* Reduced horizontal padding */
+    color: #94a3b8;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    font-size: 0.8rem; /* Slightly smaller font */
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Responsive navigation container */
+@media (min-width: 768px) {
+    .admin-tab {
+        font-size: 0.875rem; /* Normal size on larger screens */
+        padding: 0.75rem 1.25rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .admin-tab {
+        padding: 0.75rem 1.5rem; /* More padding on large screens */
+    }
+}
+
+/* Role Badges */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.role-super_admin {
+    background-color: #dc2626;
+    color: white;
+}
+
+.role-manager {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.role-user {
+    background-color: #3b82f6;
+    color: white;
+}

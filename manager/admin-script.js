@@ -41,6 +41,7 @@ class SimpleCognitoAuth {
                 
                 // Store in localStorage for persistence
                 localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+
                 
                 console.log('✅ Sign in successful');
                 return { success: true, user: this.currentUser };
@@ -105,7 +106,17 @@ class SimpleCognitoAuth {
                 };
                 
                 // Store in localStorage
-                localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+                //localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+				// FIXED VERSION
+const userDataToStore = {
+    ...this.currentUser,
+    // Ensure dbUser is included in storage
+    dbUser: userRecord,
+    role: userRecord.role,
+    department: userRecord.department,
+    name: userRecord.name
+};
+localStorage.setItem('akl_auth_user', JSON.stringify(userDataToStore));
                 
                 console.log('✅ Password set and authentication completed');
                 return { success: true, user: this.currentUser };
@@ -125,25 +136,46 @@ class SimpleCognitoAuth {
         }
     }
 
-    async getCurrentUser() {
-        // Check localStorage first
-        const storedUser = localStorage.getItem('akl_auth_user');
-        if (storedUser) {
-            try {
-                this.currentUser = JSON.parse(storedUser);
-                this.accessToken = this.currentUser.accessToken;
-                
-                // TODO: Validate token is still valid
-                console.log('✅ User restored from storage');
-                return this.currentUser;
-            } catch (error) {
-                console.log('❌ Invalid stored user data');
-                localStorage.removeItem('akl_auth_user');
+async getCurrentUser() {
+    // Check localStorage first
+    const storedUser = localStorage.getItem('akl_auth_user');
+    if (storedUser) {
+        try {
+            const parsedUser = JSON.parse(storedUser);
+            this.currentUser = parsedUser;
+            this.accessToken = parsedUser.accessToken;
+            
+            // CRITICAL FIX: If dbUser is missing, fetch it from database
+            if (!parsedUser.dbUser && parsedUser.email) {
+                console.log('🔄 dbUser missing, fetching from database...');
+                try {
+                    const userRecord = await getUserByEmail(parsedUser.email);
+                    if (userRecord) {
+                        this.currentUser.dbUser = userRecord;
+                        this.currentUser.role = userRecord.role;
+                        this.currentUser.department = userRecord.department;
+                        this.currentUser.name = userRecord.name;
+                        
+                        // Update localStorage with complete data
+                        localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+                        console.log('✅ User data restored and updated');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to fetch user record:', error);
+                }
             }
+            
+            console.log('✅ User restored from storage');
+            return this.currentUser;
+        } catch (error) {
+            console.log('❌ Invalid stored user data');
+            localStorage.removeItem('akl_auth_user');
         }
-        
-        return null;
     }
+    
+    return null;
+}
+
 
     signOut() {
         this.currentUser = null;
@@ -377,6 +409,40 @@ async resendConfirmationCode(email) {
     }
 }
 
+// Add this method to your SimpleCognitoAuth class
+async createOrUpdateUserRecord(email, cognitoId, additionalData = {}) {
+    try {
+        // Check if user already exists
+        let user = await getUserByEmail(email);
+        
+        if (!user) {
+            // Create new user record
+            const userData = {
+                email: email,
+                cognitoId: cognitoId,
+                name: additionalData.name || email.split('@')[0], // Default name from email
+                department: additionalData.department || 'General',
+                role: additionalData.role || 'USER', // Default role
+                isActive: true,
+                lastLoginAt: new Date().toISOString()
+            };
+            
+            user = await createUserInDB(userData);
+            console.log('✅ New user record created:', user);
+        } else {
+            // Update last login
+            user = await updateUserInDB(user.id, {
+                lastLoginAt: new Date().toISOString()
+            });
+            console.log('✅ User login updated:', user);
+        }
+        
+        return user;
+    } catch (error) {
+        console.error('❌ Failed to create/update user record:', error);
+        return null;
+    }
+}
 
 	
 }
@@ -447,6 +513,112 @@ async function fetchAllSignatures() {
     const data = await graphqlRequest(query);
     return data.listSignatures.items;
 }
+
+// User Management GraphQL Operations
+async function createUserInDB(userData) {
+    const mutation = `
+        mutation CreateUser($input: CreateUserInput!) {
+            createUser(input: $input) {
+                id
+                email
+                cognitoId
+                name
+                department
+                role
+                isActive
+                lastLoginAt
+                createdAt
+                updatedAt
+            }
+        }
+    `;
+    
+    const variables = {
+        input: userData
+    };
+    
+    const data = await graphqlRequest(mutation, variables);
+    return data.createUser;
+}
+
+async function fetchAllUsers() {
+    const query = `
+        query ListUsers {
+            listUsers {
+                items {
+                    id
+                    email
+                    cognitoId
+                    name
+                    department
+                    role
+                    isActive
+                    lastLoginAt
+                    createdAt
+                    updatedAt
+                }
+            }
+        }
+    `;
+    
+    const data = await graphqlRequest(query);
+    return data.listUsers.items;
+}
+
+
+async function updateUserInDB(userId, updates) {
+    const mutation = `
+        mutation UpdateUser($input: UpdateUserInput!) {
+            updateUser(input: $input) {
+                id
+                email
+                cognitoId
+                name
+                department
+                role
+                isActive
+                lastLoginAt
+                createdAt
+                updatedAt
+            }
+        }
+    `;
+    
+    const variables = {
+        input: {
+            id: userId,
+            ...updates
+        }
+    };
+    
+    const data = await graphqlRequest(mutation, variables);
+    return data.updateUser;
+}
+
+async function getUserByEmail(email) {
+    const query = `
+        query GetUserByEmail($email: String!) {
+            listUsers(filter: {email: {eq: $email}}) {
+                items {
+                    id
+                    email
+                    cognitoId
+                    name
+                    department
+                    role
+                    isActive
+                    lastLoginAt
+                    createdAt
+                    updatedAt
+                }
+            }
+        }
+    `;
+    
+    const data = await graphqlRequest(query, { email });
+    return data.listUsers.items[0] || null;
+}
+
 
 // Create New Notice in Database
 async function createNoticeInDB(noticeData) {
@@ -550,6 +722,15 @@ class AKLAdminPanel {
         
         // Initialize with simple auth
         this.initializeAuth();
+		
+		this.users = [];
+		this.userFilters = {
+			search: '',
+			role: '',
+			department: '',
+			status: ''
+		};
+
     }
 
     async initializeAuth() {
@@ -753,69 +934,167 @@ showSuccess(message, errorDiv) {
 }
 
 
-    async handleLogin() {
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const loginBtn = document.getElementById('login-btn');
-        const errorDiv = document.getElementById('login-error');
+// handleLogin method with this enhanced version
+async handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const loginBtn = document.getElementById('login-btn');
+    const errorDiv = document.getElementById('login-error');
+    
+    if (!email || !password) {
+        this.showError('Please enter both email and password', errorDiv);
+        return;
+    }
+    
+    try {
+        loginBtn.textContent = '🔄 Signing in...';
+        loginBtn.disabled = true;
+        errorDiv.classList.add('hidden');
         
-        if (!email || !password) {
-            this.showError('Please enter both email and password', errorDiv);
-            return;
-        }
+        const result = await cognitoAuth.signIn(email, password);
         
-        try {
-            loginBtn.textContent = '🔄 Signing in...';
-            loginBtn.disabled = true;
-            errorDiv.classList.add('hidden');
+        if (result.success) {
+            console.log('✅ Cognito login successful');
             
-            const result = await cognitoAuth.signIn(email, password);
+            // Create or update user record in database
+            const userRecord = await cognitoAuth.createOrUpdateUserRecord(
+                email, 
+                result.user.idToken // Using idToken as cognitoId for now
+            );
             
-            if (result.success) {
-                console.log('✅ Login successful');
-                this.currentUser = result.user;
+            if (userRecord) {
+                // Store enhanced user info
+                // REPLACE WITH THIS ENHANCED VERSION:
+				this.currentUser = {
+					...result.user,
+					dbUser: userRecord,
+					role: userRecord.role,
+					department: userRecord.department,
+					name: userRecord.name
+				};
+
+				// CRITICAL FIX: Update localStorage with complete user data
+				localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+				
+				console.log('🔍 DEBUG: currentUser after login:', this.currentUser);
+				console.log('🔍 DEBUG: userRecord.role:', userRecord.role);
+                
+                // Check if user has permission to access admin panel
+                if (!this.hasAdminAccess(userRecord.role)) {
+                    this.showError('Access denied. You do not have permission to access the Manager Portal.', errorDiv);
+                    cognitoAuth.signOut();
+                    return;
+                }
+                
                 this.isAuthenticated = true;
                 this.hideLoginModal();
                 this.init();
                 
-            } else if (result.challenge === 'NEW_PASSWORD_REQUIRED') {
-                // Handle password challenge
-                const newPassword = prompt('🔐 Please enter a new password (minimum 8 characters):');
+                this.showToast(`Welcome back, ${userRecord.name}! (${userRecord.role})`, 'success');
+            } else {
+                this.showError('Failed to create user profile. Please try again.', errorDiv);
+            }
+            
+        } else if (result.challenge === 'NEW_PASSWORD_REQUIRED') {
+            // Handle password challenge (existing code)
+            const newPassword = prompt('🔐 Please enter a new password (minimum 8 characters):');
+            
+            if (newPassword && newPassword.length >= 8) {
+                loginBtn.textContent = '🔄 Setting password...';
                 
-                if (newPassword && newPassword.length >= 8) {
-                    loginBtn.textContent = '🔄 Setting password...';
+                const passwordResult = await cognitoAuth.setNewPassword(email, newPassword, result.session);
+                
+                if (passwordResult.success) {
+                    console.log('✅ Password set and login successful');
                     
-                    const passwordResult = await cognitoAuth.setNewPassword(email, newPassword, result.session);
+                    // Create user record after password setup
+                    const userRecord = await cognitoAuth.createOrUpdateUserRecord(
+                        email, 
+                        passwordResult.user.idToken
+                    );
                     
-                    if (passwordResult.success) {
-                        console.log('✅ Password set and login successful');
-                        this.currentUser = passwordResult.user;
+                    if (userRecord && this.hasAdminAccess(userRecord.role)) {
+                        this.currentUser = {
+                            ...passwordResult.user,
+                            dbUser: userRecord,
+                            role: userRecord.role,
+                            department: userRecord.department,
+                            name: userRecord.name
+                        };
+						
+						localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
+						
                         this.isAuthenticated = true;
                         
-                        // Update password field
                         document.getElementById('login-password').value = newPassword;
                         
                         this.hideLoginModal();
                         this.init();
+                        
+                        this.showToast(`Welcome, ${userRecord.name}! Please update your profile.`, 'success');
                     } else {
-                        this.showError(passwordResult.message, errorDiv);
+                        this.showError('Access denied or failed to create profile.', errorDiv);
                     }
                 } else {
-                    this.showError('Password must be at least 8 characters long', errorDiv);
+                    this.showError(passwordResult.message, errorDiv);
                 }
-                
             } else {
-                this.showError(result.message, errorDiv);
+                this.showError('Password must be at least 8 characters long', errorDiv);
             }
             
-        } catch (error) {
-            console.error('❌ Login error:', error);
-            this.showError('Login failed. Please try again.', errorDiv);
-        } finally {
-            loginBtn.textContent = '🔐 Sign In';
-            loginBtn.disabled = false;
+        } else {
+            this.showError(result.message, errorDiv);
         }
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        this.showError('Login failed. Please try again.', errorDiv);
+    } finally {
+        loginBtn.textContent = '🔐 Sign In';
+        loginBtn.disabled = false;
     }
+}
+
+// Add this new method to check admin access
+hasAdminAccess(role) {
+    const adminRoles = ['SUPER_ADMIN', 'MANAGER'];
+    
+    if (role === 'USER') {
+        // Prevent redirect loop: only redirect if not already on user-portal.html
+        if (!window.location.pathname.endsWith('user-portal.html')) {
+            console.log('👤 USER role detected, redirecting to user portal...');
+            // Store current session info before redirect
+            const sessionInfo = {
+                email: this.currentUser.email || this.currentUser.dbUser?.email,
+                accessToken: this.currentUser.accessToken,
+                idToken: this.currentUser.idToken,
+                refreshToken: this.currentUser.refreshToken,
+                userId: this.currentUser.dbUser?.id,
+                userName: this.currentUser.dbUser?.name,
+                userRole: this.currentUser.dbUser?.role,
+                role: this.currentUser.dbUser?.role || 'USER',
+                department: this.currentUser.dbUser?.department,
+                name: this.currentUser.dbUser?.name,
+                dbUser: this.currentUser.dbUser,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('userSession', JSON.stringify(sessionInfo));
+            localStorage.setItem('userSession', JSON.stringify(sessionInfo));
+            console.log('💾 Session stored for user portal:', sessionInfo);
+            window.location.href = 'user-portal.html';
+        } else {
+            console.log('👤 USER role detected, already on user portal. No redirect.');
+        }
+        return false;
+    }
+    
+    return adminRoles.includes(role);
+}
+
+
+
+
+
 
     showError(message, errorDiv) {
         if (errorDiv) {
@@ -827,57 +1106,60 @@ showSuccess(message, errorDiv) {
 // Enhanced logout method
 logout() {
     console.log('🚪 Logging out user...');
-    
     // Clear authentication
     cognitoAuth.signOut();
     this.isAuthenticated = false;
     this.currentUser = null;
-    
     // Clear any intervals
     if (this.autoRefreshInterval) {
         clearInterval(this.autoRefreshInterval);
         this.autoRefreshInterval = null;
     }
-    
     // Clear any modals
     this.closeAllModals();
-    
     // Show success message
     this.showToast('Successfully logged out!', 'success');
-    
-    // Small delay to show the toast, then redirect to login
+    // Small delay to show the toast, then redirect to login page (admin.html)
     setTimeout(() => {
-        this.showLoginModal();
+        window.location.href = 'admin.html';
     }, 1000);
-    
     console.log('✅ Logout completed');
 }
 
 
     // Modified init method
-    async init() {
-        if (!this.isAuthenticated) {
-            this.showLoginModal();
-            return;
-        }
-
-        console.log('🚀 Initializing AKL Admin Panel...');
-        
-        this.setupEventListeners();
-        await this.loadAllData();
-        this.renderCurrentTab();
-        this.startAutoRefresh();
-        
-        // Set admin name
-        const adminNameEl = document.getElementById('admin-name');
-        if (adminNameEl) {
-            adminNameEl.textContent = this.currentUser.email || 'Manager';
-        }
-		
-		this.setupLogoutButton();
-        
-        console.log('✅ AKL Admin Panel initialized successfully');
+async init() {
+    if (!this.isAuthenticated) {
+        this.showLoginModal();
+        return;
     }
+
+    console.log('🚀 Initializing AKL Admin Panel...');
+    console.log('🔍 Current user at init:', this.currentUser);
+    console.log('🔍 User role at init:', this.currentUser?.role || this.currentUser?.dbUser?.role);
+    
+    this.setupEventListeners();
+    await this.loadAllData();
+    this.updateUIForRole();
+    this.renderCurrentTab();
+    this.startAutoRefresh();
+    
+    // Set admin name
+    const adminNameEl = document.getElementById('admin-name');
+    if (adminNameEl) {
+        const userName = this.currentUser?.name || this.currentUser?.dbUser?.name || this.currentUser?.email || 'Manager';
+        const userRole = this.currentUser?.role || this.currentUser?.dbUser?.role || 'USER';
+        adminNameEl.innerHTML = `
+            <span class="text-amber-400 font-semibold">${userName}</span>
+            <span class="text-xs text-slate-500 ml-1">(${userRole})</span>
+        `;
+    }
+    
+    this.setupLogoutButton();
+    
+    console.log('✅ AKL Admin Panel initialized successfully');
+}
+
 
 
 
@@ -983,27 +1265,32 @@ logout() {
     }
 
     // Load all data for admin panel
-    async loadAllData() {
-        try {
-            const [notices, signatures] = await Promise.all([
-                fetchAllNotices(),
-                fetchAllSignatures()
-            ]);
-            
-            this.notices = notices || [];
-            this.signatures = signatures || [];
-            
-            console.log('✅ Admin data loaded:', {
-                notices: this.notices.length,
-                signatures: this.signatures.length
-            });
-        } catch (error) {
-            console.error('❌ Failed to load admin data:', error);
-            this.showToast('Failed to load data from server', 'error');
-            // Load sample data for demo
-            this.loadSampleData();
-        }
+// Load all data for admin panel
+async loadAllData() {
+    try {
+        const [notices, signatures, users] = await Promise.all([
+            fetchAllNotices(),
+            fetchAllSignatures(),
+            fetchAllUsers()
+        ]);
+        
+        this.notices = notices || [];
+        this.signatures = signatures || [];
+        this.users = users || [];
+        
+        console.log('✅ Admin data loaded:', {
+            notices: this.notices.length,
+            signatures: this.signatures.length,
+            users: this.users.length
+        });
+    } catch (error) {
+        console.error('❌ Failed to load admin data:', error);
+        this.showToast('Failed to load data from server', 'error');
+        // Load sample data for demo
+        this.loadSampleData();
     }
+}
+
 
     // Load sample data for development/demo
     loadSampleData() {
@@ -1145,22 +1432,27 @@ logout() {
     }
 
     // Render current tab content
-    renderCurrentTab() {
-        switch(this.currentTab) {
-            case 'dashboard':
-                this.renderDashboard();
-                break;
-            case 'notices':
-                this.renderNoticeManagement();
-                break;
-            case 'acknowledgments':
-                this.renderAcknowledmentTracking();
-                break;
-            case 'analytics':
-                this.renderAnalytics();
-                break;
-        }
+
+renderCurrentTab() {
+    switch(this.currentTab) {
+        case 'dashboard':
+            this.renderDashboard();
+            break;
+        case 'notices':
+            this.renderNoticeManagement();
+            break;
+        case 'users': // Add this case
+            this.renderUserManagement();
+            break;
+        case 'acknowledgments':
+            this.renderAcknowledmentTracking();
+            break;
+        case 'analytics':
+            this.renderAnalytics();
+            break;
     }
+}
+
 
     // Render dashboard
     renderDashboard() {
@@ -3930,6 +4222,798 @@ async handleResendSignupCode() {
     }
 }
 
+// Role checking methods
+isRole(role) {
+    return this.currentUser?.role === role;
+}
+
+isSuperAdmin() {
+    return this.isRole('SUPER_ADMIN');
+}
+
+isManager() {
+    return this.isRole('MANAGER');
+}
+
+hasPermission(permission) {
+    const permissions = {
+        'CREATE_NOTICE': ['SUPER_ADMIN', 'MANAGER'],
+        'DELETE_NOTICE': ['SUPER_ADMIN', 'MANAGER'],
+        'MANAGE_USERS': ['SUPER_ADMIN'],
+        'VIEW_ANALYTICS': ['SUPER_ADMIN', 'MANAGER'],
+        'BULK_OPERATIONS': ['SUPER_ADMIN', 'MANAGER'],
+        'EXPORT_DATA': ['SUPER_ADMIN', 'MANAGER']
+    };
+    
+    // ENHANCED: Try multiple ways to get the user role with fallback
+    const userRole = this.currentUser?.role || 
+                    this.currentUser?.dbUser?.role || 
+                    this.currentUser?.user?.role ||
+                    'USER'; // Default fallback
+    
+    const allowedRoles = permissions[permission] || [];
+    
+    console.log(`🔐 Permission check: ${permission} for role ${userRole} = ${allowedRoles.includes(userRole)}`);
+    
+    return allowedRoles.includes(userRole);
+}
+
+
+
+
+// Update UI based on permissions
+updateUIForRole() {
+    // Get role from multiple possible locations
+    const userRole = this.currentUser?.role || 
+                    this.currentUser?.dbUser?.role || 
+                    this.currentUser?.user?.role;
+    
+    console.log('🎨 Updating UI for role:', userRole);
+    console.log('🔍 Full currentUser object:', this.currentUser);
+    
+    if (!userRole) {
+        console.log('⚠️ No user role found, skipping UI updates');
+        return;
+    }
+    
+    // Define elements to hide based on permissions
+    const elementsToCheck = [
+        {
+            selector: '#nav-users',
+            permission: 'MANAGE_USERS',
+            required: true
+        },
+        {
+            selector: '[onclick="showBulkActionsModal()"]',
+            permission: 'BULK_OPERATIONS',
+            required: false
+        },
+        {
+            selector: '.export-btn',
+            permission: 'EXPORT_DATA',
+            required: false
+        }
+    ];
+    
+    elementsToCheck.forEach(({ selector, permission, required }) => {
+        const elements = document.querySelectorAll(selector);
+        
+        if (elements.length > 0) {
+            const hasPermission = this.hasPermission(permission);
+            
+            elements.forEach(element => {
+                if (hasPermission) {
+                    element.style.display = '';
+                    element.style.visibility = 'visible';
+                } else if (required) {
+                    element.style.display = 'none';
+                }
+            });
+            
+            console.log(`🔍 ${selector}: ${hasPermission ? 'SHOWN' : 'HIDDEN'} (${elements.length} elements)`);
+        }
+    });
+    
+    // Update admin name display
+    const adminNameEl = document.getElementById('admin-name');
+    if (adminNameEl && this.currentUser?.dbUser) {
+        adminNameEl.innerHTML = `
+            <span class="text-amber-400 font-semibold">${this.currentUser.dbUser.name}</span>
+            <span class="text-xs text-slate-500 ml-1">(${this.currentUser.dbUser.role})</span>
+        `;
+    }
+    
+    console.log('✅ UI update completed');
+}
+
+
+
+// Add this new method to your AKLAdminPanel class
+renderUserManagement() {
+    // Update user stats
+    this.updateUserStats();
+    
+    // Setup user filters
+    this.setupUserFilters();
+    
+    // Render users table
+    this.renderUsersTable();
+}
+
+updateUserStats() {
+    const totalUsers = this.users.length;
+    const activeUsers = this.users.filter(u => u.isActive).length;
+    const managers = this.users.filter(u => u.role === 'MANAGER').length;
+    const admins = this.users.filter(u => u.role === 'SUPER_ADMIN').length;
+    
+    // Update stat cards
+    const elements = {
+        'total-users-stat': totalUsers,
+        'active-users-stat': activeUsers,
+        'managers-stat': managers,
+        'admins-stat': admins
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    });
+}
+
+setupUserFilters() {
+    // Search filter
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            this.userFilters.search = e.target.value.toLowerCase();
+            this.renderUsersTable();
+        });
+    }
+
+    // Role filter
+    const roleFilter = document.getElementById('role-filter');
+    if (roleFilter) {
+        roleFilter.addEventListener('change', (e) => {
+            this.userFilters.role = e.target.value;
+            this.renderUsersTable();
+        });
+    }
+
+    // Department filter
+    const deptFilter = document.getElementById('department-filter');
+    if (deptFilter) {
+        deptFilter.addEventListener('change', (e) => {
+            this.userFilters.department = e.target.value;
+            this.renderUsersTable();
+        });
+    }
+
+    // Status filter
+    const statusFilter = document.getElementById('user-status-filter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+            this.userFilters.status = e.target.value;
+            this.renderUsersTable();
+        });
+    }
+}
+
+renderUsersTable() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+
+    let filteredUsers = [...this.users];
+	
+	const currentUserId = this.currentUser?.dbUser?.id || 'unknown';
+
+    // Apply filters
+    if (this.userFilters.search) {
+        filteredUsers = filteredUsers.filter(user => 
+            user.name.toLowerCase().includes(this.userFilters.search) ||
+            user.email.toLowerCase().includes(this.userFilters.search) ||
+            user.department.toLowerCase().includes(this.userFilters.search)
+        );
+    }
+
+    if (this.userFilters.role) {
+        filteredUsers = filteredUsers.filter(user => user.role === this.userFilters.role);
+    }
+
+    if (this.userFilters.department) {
+        filteredUsers = filteredUsers.filter(user => user.department === this.userFilters.department);
+    }
+
+    if (this.userFilters.status) {
+        filteredUsers = filteredUsers.filter(user => {
+            return this.userFilters.status === 'active' ? user.isActive : !user.isActive;
+        });
+    }
+
+    // Sort users (active first, then by name)
+    filteredUsers.sort((a, b) => {
+        if (a.isActive && !b.isActive) return -1;
+        if (!a.isActive && b.isActive) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    tbody.innerHTML = filteredUsers.map(user => {
+        const roleIcon = this.getRoleIcon(user.role);
+        const statusClass = user.isActive ? 'status-active' : 'status-expired';
+        const statusText = user.isActive ? '✅ Active' : '❌ Inactive';
+        
+        return `
+            <tr class="table-row ${!user.isActive ? 'opacity-60' : ''}">
+                <td class="table-cell">
+                    <input type="checkbox" class="user-checkbox rounded" value="${user.id}">
+                </td>
+                <td class="table-cell">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="font-medium text-white">${user.name}</div>
+                            <div class="text-xs text-slate-400">${user.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="table-cell">
+                    <span class="role-badge role-${user.role.toLowerCase()}">${roleIcon} ${user.role}</span>
+                </td>
+                <td class="table-cell">
+                    <span class="text-slate-300">${user.department}</span>
+                </td>
+                <td class="table-cell">
+                    <span class="${statusClass}">${statusText}</span>
+                </td>
+                <td class="table-cell">
+                    <div class="text-sm">
+                        ${user.lastLoginAt ? this.formatDate(user.lastLoginAt) : 'Never'}
+                    </div>
+                </td>
+                <td class="table-cell">
+                    <div class="text-sm">${this.formatDate(user.createdAt)}</div>
+                </td>
+                <td class="table-cell">
+                    <div class="flex items-center space-x-2">
+                        <button class="action-btn edit" onclick="window.adminPanel.editUser('${user.id}')" title="Edit User">
+                            ✏️
+                        </button>
+                        <button class="action-btn view" onclick="window.adminPanel.viewUserDetails('${user.id}')" title="View Details">
+                            👁️
+                        </button>
+                        ${user.id !== this.currentUser.dbUser.id ? `
+                            <button class="action-btn delete" onclick="window.adminPanel.toggleUserStatus('${user.id}')" title="${user.isActive ? 'Deactivate' : 'Activate'} User">
+                                ${user.isActive ? '🚫' : '✅'}
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+getRoleIcon(role) {
+    const icons = {
+        'SUPER_ADMIN': '🔑',
+        'MANAGER': '👔',
+        'USER': '👤'
+    };
+    return icons[role] || '👤';
+}
+
+// Show create user modal
+showCreateUserModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content w-full max-w-2xl">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-slate-100">➕ Create New User</h2>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <form id="create-user-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="name" class="form-input" required 
+                                   placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" name="email" class="form-input" required 
+                                   placeholder="user@amazon.com">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Role *</label>
+                            <select name="role" class="form-select" required>
+                                <option value="">Select Role</option>
+                                <option value="USER">👤 User</option>
+                                <option value="MANAGER">👔 Manager</option>
+                                ${this.isSuperAdmin() ? '<option value="SUPER_ADMIN">🔑 Super Admin</option>' : ''}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <select name="department" class="form-select" required>
+                                <option value="">Select Department</option>
+                                <option value="Management">Management</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Temporary Password *</label>
+                        <input type="password" name="tempPassword" class="form-input" required 
+                               placeholder="Minimum 8 characters" minlength="8">
+                        <p class="text-xs text-slate-400 mt-1">
+                            User will be required to change this password on first login
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" name="isActive" class="rounded" checked>
+                        <span class="text-sm">✅ Account is active</span>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button onclick="this.closest('.modal').remove()" 
+                        class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="window.adminPanel.createUser()" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
+                    ➕ Create User
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modal-container').appendChild(modal);
+    
+    // Focus on name input
+    setTimeout(() => {
+        const nameInput = modal.querySelector('input[name="name"]');
+        if (nameInput) nameInput.focus();
+    }, 100);
+}
+
+// Create new user
+async createUser() {
+    const form = document.getElementById('create-user-form');
+    const formData = new FormData(form);
+    
+    const userData = {
+        name: formData.get('name').trim(),
+        email: formData.get('email').trim(),
+        role: formData.get('role'),
+        department: formData.get('department'),
+        isActive: formData.get('isActive') === 'on',
+        cognitoId: 'temp-' + Date.now(), // Temporary until Cognito user is created
+        lastLoginAt: null
+    };
+    
+    // Validation
+    if (!userData.name || !userData.email || !userData.role || !userData.department) {
+        this.showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    const tempPassword = formData.get('tempPassword');
+    if (!tempPassword || tempPassword.length < 8) {
+        this.showToast('Password must be at least 8 characters', 'error');
+        return;
+    }
+    
+    try {
+        // First, create Cognito user
+        const cognitoResult = await cognitoAuth.signUp(userData.email, tempPassword);
+        
+        if (cognitoResult.success) {
+            // Create user record in database
+            const newUser = await createUserInDB(userData);
+            
+            // Add to local array
+            this.users.push(newUser);
+            
+            // Refresh the display
+            this.renderUserManagement();
+            this.closeAllModals();
+            
+            this.showToast(`User ${userData.name} created successfully! They will need to verify their email.`, 'success');
+        } else {
+            this.showToast(`Failed to create Cognito user: ${cognitoResult.message}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Failed to create user:', error);
+        this.showToast('Failed to create user. Please try again.', 'error');
+    }
+}
+
+// Edit user
+editUser(userId) {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) {
+        this.showToast('User not found', 'error');
+        return;
+    }
+    
+    this.showEditUserModal(user);
+}
+
+// View user details
+viewUserDetails(userId) {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) {
+        this.showToast('User not found', 'error');
+        return;
+    }
+    
+    this.showUserDetailsModal(user);
+}
+
+// Toggle user status (activate/deactivate)
+async toggleUserStatus(userId) {
+    const user = this.users.find(u => u.id === userId);
+    if (!user) {
+        this.showToast('User not found', 'error');
+        return;
+    }
+    
+    const action = user.isActive ? 'deactivate' : 'activate';
+    const confirmed = await this.showConfirmationModal({
+        title: `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
+        message: `Are you sure you want to ${action} ${user.name}?`,
+        confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+        type: user.isActive ? 'warning' : 'info',
+        icon: user.isActive ? '🚫' : '✅'
+    });
+    
+    if (!confirmed) return;
+    
+    try {
+        const updatedUser = await updateUserInDB(userId, {
+            isActive: !user.isActive
+        });
+        
+        // Update local array
+        const index = this.users.findIndex(u => u.id === userId);
+        if (index !== -1) {
+            this.users[index] = updatedUser;
+        }
+        
+        this.renderUserManagement();
+        this.showToast(`User ${action}d successfully!`, 'success');
+        
+    } catch (error) {
+        console.error(`Failed to ${action} user:`, error);
+        this.showToast(`Failed to ${action} user`, 'error');
+    }
+}
+
+// Show user details modal
+showUserDetailsModal(user) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content w-full max-w-2xl">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-slate-100">👁️ User Details</h2>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- User Avatar & Basic Info -->
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                                ${user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">${user.name}</h3>
+                                <p class="text-slate-400">${user.email}</p>
+                                <span class="role-badge role-${user.role.toLowerCase()}">${this.getRoleIcon(user.role)} ${user.role}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Department:</span>
+                                <span class="text-white">${user.department}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Status:</span>
+                                <span class="${user.isActive ? 'status-active' : 'status-expired'}">
+                                    ${user.isActive ? '✅ Active' : '❌ Inactive'}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">User ID:</span>
+                                <span class="text-white text-xs font-mono">${user.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Activity & Dates -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">📊 Activity</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Created:</span>
+                                <span class="text-white">${this.formatDate(user.createdAt)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Last Updated:</span>
+                                <span class="text-white">${this.formatDate(user.updatedAt)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Last Login:</span>
+                                <span class="text-white">
+                                    ${user.lastLoginAt ? this.formatDate(user.lastLoginAt) : 'Never'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Acknowledgment Stats -->
+                        <div class="mt-6">
+                            <h4 class="text-lg font-semibold text-white mb-3">📝 Acknowledgments</h4>
+                            <div class="bg-slate-700 rounded-lg p-4">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-400">${this.getUserAcknowledgmentCount(user.id)}</div>
+                                    <div class="text-sm text-slate-400">Total Signed</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button onclick="this.closest('.modal').remove()" 
+                        class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                    Close
+                </button>
+                <button onclick="window.adminPanel.editUser('${user.id}'); this.closest('.modal').remove();" 
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                    ✏️ Edit User
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modal-container').appendChild(modal);
+}
+
+// Show edit user modal
+showEditUserModal(user) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content w-full max-w-2xl">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-slate-100">✏️ Edit User</h2>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <form id="edit-user-form" class="space-y-4">
+                    <input type="hidden" name="userId" value="${user.id}">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="name" class="form-input" required 
+                                   value="${user.name}" placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" name="email" class="form-input" required 
+                                   value="${user.email}" placeholder="user@amazon.com" readonly>
+                            <p class="text-xs text-slate-400 mt-1">Email cannot be changed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Role *</label>
+                            <select name="role" class="form-select" required>
+                                <option value="USER" ${user.role === 'USER' ? 'selected' : ''}>👤 User</option>
+                                <option value="MANAGER" ${user.role === 'MANAGER' ? 'selected' : ''}>👔 Manager</option>
+                                ${this.isSuperAdmin() ? `<option value="SUPER_ADMIN" ${user.role === 'SUPER_ADMIN' ? 'selected' : ''}>🔑 Super Admin</option>` : ''}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <select name="department" class="form-select" required>
+                                <option value="Management" ${user.department === 'Management' ? 'selected' : ''}>Management</option>
+                                <option value="Operations" ${user.department === 'Operations' ? 'selected' : ''}>Operations</option>
+                                <option value="Safety" ${user.department === 'Safety' ? 'selected' : ''}>Safety</option>
+                                <option value="Maintenance" ${user.department === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                                <option value="General" ${user.department === 'General' ? 'selected' : ''}>General</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" name="isActive" class="rounded" ${user.isActive ? 'checked' : ''}>
+                        <span class="text-sm">✅ Account is active</span>
+                    </div>
+                    
+                    ${user.id !== this.currentUser.dbUser.id ? `
+                        <div class="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-amber-400">⚠️</span>
+                                <span class="text-sm text-amber-200">
+                                    Changes will take effect immediately. User may need to log in again.
+                                </span>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-blue-400">ℹ️</span>
+                                <span class="text-sm text-blue-200">
+                                    You are editing your own account. Be careful with role changes.
+                                </span>
+                            </div>
+                        </div>
+                    `}
+                </form>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button onclick="this.closest('.modal').remove()" 
+                        class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="window.adminPanel.updateUser()" 
+                        class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
+                    💾 Save Changes
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('modal-container').appendChild(modal);
+    
+    // Focus on name input
+    setTimeout(() => {
+        const nameInput = modal.querySelector('input[name="name"]');
+        if (nameInput) nameInput.focus();
+    }, 100);
+}
+
+// Update user
+async updateUser() {
+    const form = document.getElementById('edit-user-form');
+    const formData = new FormData(form);
+    
+    const userId = formData.get('userId');
+    const updates = {
+        name: formData.get('name').trim(),
+        role: formData.get('role'),
+        department: formData.get('department'),
+        isActive: formData.get('isActive') === 'on'
+    };
+    
+    // Validation
+    if (!updates.name || !updates.role || !updates.department) {
+        this.showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const updatedUser = await updateUserInDB(userId, updates);
+        
+        // Update local array
+        const index = this.users.findIndex(u => u.id === userId);
+        if (index !== -1) {
+            this.users[index] = updatedUser;
+        }
+        
+        // If user updated their own account, update currentUser
+        if (userId === this.currentUser.dbUser.id) {
+            this.currentUser.dbUser = updatedUser;
+            this.currentUser.role = updatedUser.role;
+            this.currentUser.department = updatedUser.department;
+            this.currentUser.name = updatedUser.name;
+        }
+        
+        this.renderUserManagement();
+        this.closeAllModals();
+        
+        this.showToast(`User ${updates.name} updated successfully!`, 'success');
+        
+    } catch (error) {
+        console.error('Failed to update user:', error);
+        this.showToast('Failed to update user. Please try again.', 'error');
+    }
+}
+
+// Helper method to get user acknowledgment count
+getUserAcknowledgmentCount(userId) {
+    return this.signatures.filter(sig => sig.userId === userId).length;
+}
+
+// Close all modals
+closeAllModals() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => modal.remove());
+}
+
+// Enhanced confirmation modal
+async showConfirmationModal({ title, message, confirmText = 'Confirm', type = 'warning', icon = '⚠️' }) {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        
+        const typeColors = {
+            warning: 'border-amber-500 bg-amber-900/20',
+            danger: 'border-red-500 bg-red-900/20',
+            info: 'border-blue-500 bg-blue-900/20',
+            success: 'border-green-500 bg-green-900/20'
+        };
+        
+        const buttonColors = {
+            warning: 'bg-amber-600 hover:bg-amber-500',
+            danger: 'bg-red-600 hover:bg-red-500',
+            info: 'bg-blue-600 hover:bg-blue-500',
+            success: 'bg-green-600 hover:bg-green-500'
+        };
+        
+        modal.innerHTML = `
+            <div class="modal-content w-full max-w-md">
+                <div class="modal-header">
+                    <h2 class="text-xl font-bold text-slate-100">${icon} ${title}</h2>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="border rounded-lg p-4 ${typeColors[type]}">
+                        <p class="text-slate-200">${message}</p>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button onclick="this.closest('.modal').remove(); window.confirmResolve(false);" 
+                            class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="this.closest('.modal').remove(); window.confirmResolve(true);" 
+                            class="px-4 py-2 ${buttonColors[type]} text-white rounded-lg transition-colors">
+                        ${confirmText}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Store resolve function globally
+        window.confirmResolve = resolve;
+        
+        document.getElementById('modal-container').appendChild(modal);
+    });
+}
+
 
 
 }
@@ -4163,6 +5247,22 @@ function submitNotice() {
         window.adminPanel.submitNotice();
     }
 }
+
+// Global function for creating users
+function showCreateUserModal() {
+    if (window.adminPanel) {
+        window.adminPanel.showCreateUserModal();
+    }
+}
+
+// Global function for bulk user actions
+function showBulkUserActionsModal() {
+    if (window.adminPanel) {
+        window.adminPanel.showToast('Bulk user actions coming soon!', 'info');
+    }
+}
+
+
 
 // ============================================================================
 // UPDATED BULK ACTION GLOBAL FUNCTIONS

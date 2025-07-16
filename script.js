@@ -140,13 +140,16 @@ async function createSignatureInDB(signatureData) {
         input: {
             id: uniqueId,
             noticeId: signatureData.noticeId,
-            noticeID: signatureData.noticeId,
+            noticeID: signatureData.noticeId, // Add capital D for backend compatibility
             userId: signatureData.userId,
             userName: signatureData.userName,
             timestamp: signatureData.timestamp
         }
     };
-    
+
+    // Debug log
+    console.log('[DEBUG] createSignatureInDB input:', JSON.stringify(variables, null, 2));
+
     try {
         const data = await graphqlRequest(mutation, variables);
         return data.createSignature;
@@ -205,6 +208,17 @@ class AKLNoticeBoard {
         localStorage.setItem('akl_user_name', userData.name);
         localStorage.setItem('akl_user_email', userData.email || '');
         this.currentUser = userData;
+    }
+
+    hasActiveSession() {
+        try {
+            const session = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+            if (!session) return false;
+            const data = JSON.parse(session);
+            return data && data.email && data.userRole;
+        } catch {
+            return false;
+        }
     }
 
     // Setup all event listeners
@@ -746,94 +760,113 @@ class AKLNoticeBoard {
 
     // Complete the renderNoticeCard method with better date formatting
 renderNoticeCard(notice) {
-        const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
-        const isSigned = this.isNoticeSigned(notice.id);
-        const signatureInfo = this.getSignatureInfo(notice.id);
-        const timeAgo = this.getTimeAgo(notice.createdAt);
-        const fullDateTime = this.getFullDateTime(notice.createdAt);
-        const expiresIn = notice.expiresAt ? this.getExpiresIn(notice.expiresAt) : '';
-
-        return `
-            <div class="notice-card notice-${notice.priority} ${notice.isPinned ? 'notice-pinned' : ''} ${isExpired ? 'opacity-60' : ''}" data-notice-id="${notice.id}">
-                <!-- Notice Header -->
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <span class="priority-badge priority-${notice.priority}">
-                                ${this.getPriorityIcon(notice.priority)} ${notice.priority.toUpperCase()}
-                            </span>
-                            <span class="category-badge">
-                                ${this.getCategoryIcon(notice.category)} ${notice.category}
-                            </span>
-                            ${notice.isPinned ? '<span class="text-amber-400 text-sm font-medium">📌 PINNED</span>' : ''}
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-100 mb-2">${notice.title}</h3>
-                        <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
-                            <span>👤 ${notice.author}</span>
-                            <span title="${fullDateTime}">📅 ${timeAgo}</span>
-                            <span>📍 ${notice.source}</span>
-                            ${isExpired ? '<span class="text-red-400">⚠️ EXPIRED</span>' : (expiresIn ? `<span>⏰ Expires ${expiresIn}</span>` : '')}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notice Content with Rich Text -->
-                <div class="mb-4 notice-content">
-                    ${this.renderRichTextContent(notice.content)}
-                </div>
-
-                <!-- Tags -->
-                ${notice.tags && notice.tags.length > 0 ? `
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        ${notice.tags.map(tag => `
-                            <span class="bg-slate-700 text-slate-300 px-2 py-1 rounded-full text-xs font-medium">
-                                #${tag}
-                            </span>
-                        `).join('')}
-                    </div>
-                ` : ''}
-
-                <!-- Signature Section -->
-                ${notice.requiresSignature ? `
-                    <div class="signature-section ${isSigned ? 'signature-completed' : 'signature-required'}">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                ${isSigned ? `
-                                    <div class="flex items-center space-x-2 text-green-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        <span class="font-medium">Acknowledged by ${signatureInfo.userName}</span>
-                                    </div>
-                                    <div class="text-sm text-slate-400">
-                                        ${this.getTimeAgo(signatureInfo.timestamp)}
-                                    </div>
-                                ` : `
-                                    <div class="flex items-center space-x-2 text-amber-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path>
-                                        </svg>
-                                        <span class="font-medium">Acknowledgment Required</span>
-                                    </div>
-                                    <div class="text-sm text-slate-400">
-                                        Please acknowledge this notice
-                                    </div>
-                                `}
-                            </div>
-                            ${!isSigned && !isExpired ? `
-                                <button class="sign-btn" data-notice-id="${notice.id}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                                    </svg>
-                                    Acknowledge Notice
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+    const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
+    // Gather all signatures for this notice
+    const allSignatures = this.allSignatures.filter(sig => sig.noticeId === notice.id);
+    const ackCount = allSignatures.length;
+    // Get current user info from session
+    let session = null, user = null, userId = null, userName = null, isLoggedIn = false;
+    try {
+        session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+        if (session) session = JSON.parse(session);
+    } catch {}
+    try {
+        user = JSON.parse(localStorage.getItem('akl_auth_user'));
+    } catch {}
+    if (session && (session.id || session.userId)) {
+        userId = session.id || session.userId;
+        userName = session.name || session.userName || session.dbUser?.name;
+        isLoggedIn = true;
+    } else if (user && (user.dbUser?.id || user.id)) {
+        userId = user.dbUser?.id || user.id;
+        userName = user.dbUser?.name || user.name;
+        isLoggedIn = true;
     }
+    // Find if this user has acknowledged
+    const userSignature = allSignatures.find(sig => sig.userId === userId);
+    const isAcknowledged = !!userSignature;
+    // Date/time for user's signature
+    const ackTime = userSignature ? this.getTimeAgo(userSignature.timestamp) : '';
+    // Signature section logic
+    let signatureSection = '';
+    if (notice.requiresSignature) {
+        if (!isLoggedIn) {
+            signatureSection = `
+                <div class="signature-section signature-required">
+                    <div class="flex items-center space-x-2 text-amber-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                        <span class="font-medium">Login to Acknowledge</span>
+                        <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                    </div>
+                    <button class="sign-btn" data-notice-id="${notice.id}" data-login="1">Login to Acknowledge</button>
+                </div>
+            `;
+        } else if (isAcknowledged) {
+            signatureSection = `
+                <div class="signature-section signature-completed">
+                    <div class="flex items-center space-x-2 text-green-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="font-medium">Acknowledged by ${userSignature.userName}</span>
+                        <span class="ml-3 text-xs text-green-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                    </div>
+                    <div class="text-sm text-slate-400 mt-1">${ackTime}</div>
+                </div>
+            `;
+        } else {
+            signatureSection = `
+                <div class="signature-section signature-required">
+                    <div class="flex items-center space-x-2 text-amber-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                        <span class="font-medium">Acknowledge Notice</span>
+                        <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                    </div>
+                    <button class="sign-btn" data-notice-id="${notice.id}">✍️ Acknowledge Notice</button>
+                </div>
+            `;
+        }
+    }
+    return `
+        <div class="notice-card notice-${notice.priority} ${notice.isPinned ? 'notice-pinned' : ''} ${isExpired ? 'opacity-60' : ''}" data-notice-id="${notice.id}">
+            <!-- Notice Header -->
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <span class="priority-badge priority-${notice.priority}">
+                            ${this.getPriorityIcon(notice.priority)} ${notice.priority.toUpperCase()}
+                        </span>
+                        <span class="category-badge">
+                            ${this.getCategoryIcon(notice.category)} ${notice.category}
+                        </span>
+                        ${notice.isPinned ? '<span class="text-amber-400 text-sm font-medium">📌 PINNED</span>' : ''}
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-100 mb-2">${notice.title}</h3>
+                    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
+                        <span>👤 ${notice.author}</span>
+                        <span title="${this.getFullDateTime(notice.createdAt)}">📅 ${this.getTimeAgo(notice.createdAt)}</span>
+                        <span>📍 ${notice.source}</span>
+                        ${isExpired ? '<span class="text-red-400">⚠️ EXPIRED</span>' : (notice.expiresAt ? `<span>⏰ Expires ${this.getExpiresIn(notice.expiresAt)}</span>` : '')}
+                    </div>
+                </div>
+            </div>
+            <!-- Notice Content with Rich Text -->
+            <div class="mb-4 notice-content">
+                ${this.renderRichTextContent(notice.content)}
+            </div>
+            <!-- Tags -->
+            ${notice.tags && notice.tags.length > 0 ? `
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${notice.tags.map(tag => `
+                        <span class="bg-slate-700 text-slate-300 px-2 py-1 rounded-full text-xs font-medium">
+                            #${tag}
+                        </span>
+                    `).join('')}
+                </div>
+            ` : ''}
+            <!-- Signature Section -->
+            ${signatureSection}
+        </div>
+    `;
+}
 	
 	// NEW: Render rich text content
     renderRichTextContent(content) {
@@ -915,127 +948,73 @@ renderNoticeCard(notice) {
         document.querySelectorAll('.sign-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const noticeId = e.target.closest('.sign-btn').dataset.noticeId;
-                this.showSignatureModal(noticeId);
+                const isLogin = e.target.closest('.sign-btn').dataset.login === '1';
+                if (isLogin) {
+                    window.location.href = 'manager/admin.html';
+                    return;
+                }
+                // Use logged-in user info, no modal
+                let session = null, user = null, userId = null, userName = null;
+                try {
+                    session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+                    if (session) session = JSON.parse(session);
+                } catch {}
+                try {
+                    user = JSON.parse(localStorage.getItem('akl_auth_user'));
+                } catch {}
+                if (session && (session.id || session.userId)) {
+                    userId = session.id || session.userId;
+                    userName = session.name || session.userName || session.dbUser?.name;
+                } else if (user && (user.dbUser?.id || user.id)) {
+                    userId = user.dbUser?.id || user.id;
+                    userName = user.dbUser?.name || user.name;
+                }
+                if (!userId || !userName) {
+                    this.showToast('You must be logged in to acknowledge a notice. Please log in.', 'error');
+                    return;
+                }
+                this.signNotice(noticeId, userId, userName);
             });
         });
     }
 
-    // Show signature modal to collect user name
-    showSignatureModal(noticeId) {
-        const notice = this.notices.find(n => n.id === noticeId);
-        if (!notice) return;
-
-        // Check if already signed
-        if (this.isNoticeSigned(noticeId)) {
-            this.showToast('You have already acknowledged this notice!', 'warning');
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content w-full max-w-md">
-                <div class="bg-slate-800 px-6 py-4 border-b border-slate-700">
-                    <h2 class="text-xl font-bold text-slate-100">✍️ Acknowledge Notice</h2>
-                </div>
-                <div class="p-6">
-                    <div class="mb-4">
-                        <h3 class="font-semibold text-slate-200 mb-2">${notice.title}</h3>
-                        <p class="text-sm text-slate-400">Please enter your name/alias to acknowledge this notice:</p>
-                    </div>
-                    <form id="signature-form" class="space-y-4">
-                        <div class="form-group">
-                            <label class="form-label">Your Name/Alias *</label>
-                            <input type="text" name="userName" class="form-input" required 
-                                   placeholder="Enter your name or alias" 
-                                   value="${this.currentUser.name}">
-                        </div>
-                    </form>
-                </div>
-                <div class="bg-slate-800 px-6 py-4 border-t border-slate-700 flex justify-end space-x-3">
-                    <button onclick="this.closest('.modal').remove()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                    <button onclick="confirmSignature('${noticeId}')" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
-                        ✍️ Acknowledge
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('modal-container').appendChild(modal);
-        
-        // Focus on input
-        setTimeout(() => {
-            const input = modal.querySelector('input[name="userName"]');
-            if (input) input.focus();
-        }, 100);
-    }
-
     // Sign notice with user name collection
-    async signNotice(noticeId, userName) {
-        if (!userName || userName.trim() === '') {
-            this.showToast('Please enter your name/alias', 'error');
+    async signNotice(noticeId, userId, userName) {
+        if (!userId || !userName) {
+            this.showToast('User session invalid. Please log in again.', 'error');
             return;
         }
-
         // Check if already signed
-        if (this.isNoticeSigned(noticeId)) {
+        const allSignatures = this.allSignatures.filter(sig => sig.noticeId === noticeId);
+        if (allSignatures.find(sig => sig.userId === userId)) {
             this.showToast('You have already acknowledged this notice!', 'warning');
             return;
         }
-
-        const signature = {
-            userId: this.currentUser.id,
-            userName: userName.trim(),
-            timestamp: new Date().toISOString()
-        };
-        
-        // Update current user name if provided
-        if (userName.trim() !== this.currentUser.name) {
-            this.saveCurrentUser({
-                ...this.currentUser,
-                name: userName.trim()
-            });
-        }
-        
         try {
-            // Try to save to AWS first
             await createSignatureInDB({
                 noticeId: noticeId,
-                userId: signature.userId,
-                userName: signature.userName,
-                timestamp: signature.timestamp
+                userId: userId,
+                userName: userName,
+                timestamp: new Date().toISOString()
             });
-            
-            // Add to local signatures map
-            const key = `${noticeId}_${signature.userId}`;
-            this.signatures.set(key, signature);
-            
+            // Reload all signatures from backend
+            this.allSignatures = await fetchSignaturesFromDB();
             this.render();
-            this.closeAllModals();
+            this.updateStatusBar(this.getAllFilteredNotices());
             this.showToast('Notice acknowledged successfully!', 'success');
-            
         } catch (error) {
-            console.log('AWS signature failed, saving locally:', error);
-            
-            // Fallback to local storage
-            const key = `${noticeId}_${signature.userId}`;
-            this.signatures.set(key, signature);
-            this.saveSignatures();
-            
-            this.render();
-            this.closeAllModals();
-            this.showToast('Notice acknowledged locally!', 'warning');
+            console.error('Failed to acknowledge notice:', error);
+            this.showToast('Failed to acknowledge notice. Please try again.', 'error');
         }
     }
 
     saveSignatures() {
-        const signaturesArray = Array.from(this.signatures.entries()).map(([key, value]) => ({
-            key,
-            ...value
-        }));
-        localStorage.setItem('akl_signatures', JSON.stringify(signaturesArray));
+        // REMOVE: No longer saving signatures to localStorage
+        // const signaturesArray = Array.from(this.signatures.entries()).map(([key, value]) => ({
+        //     key,
+        //     ...value
+        // }));
+        // localStorage.setItem('akl_signatures', JSON.stringify(signaturesArray));
     }
 
     // Status bar updates with pagination info
@@ -1045,9 +1024,26 @@ renderNoticeCard(notice) {
         
         if (totalNoticesEl) totalNoticesEl.textContent = this.notices.length;
         
-        const unsignedCount = this.notices.filter(notice => 
-            notice.requiresSignature && !this.isNoticeSigned(notice.id)
-        ).length;
+        // Count unsigned for current user
+        let session = null, user = null, userId = null;
+        try {
+            session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+            if (session) session = JSON.parse(session);
+        } catch {}
+        try {
+            user = JSON.parse(localStorage.getItem('akl_auth_user'));
+        } catch {}
+        if (session && (session.id || session.userId)) {
+            userId = session.id || session.userId;
+        } else if (user && (user.dbUser?.id || user.id)) {
+            userId = user.dbUser?.id || user.id;
+        }
+        let unsignedCount = 0;
+        if (userId) {
+            unsignedCount = this.notices.filter(notice =>
+                notice.requiresSignature && !this.allSignatures.some(sig => sig.noticeId === notice.id && sig.userId === userId)
+            ).length;
+        }
         if (unsignedCountEl) unsignedCountEl.textContent = unsignedCount;
         
         // Update new notice indicator
@@ -1326,17 +1322,6 @@ function clearFilter() {
 function clearAllFilters() {
     clearSearch();
     clearFilter();
-}
-
-// Confirm signature with name validation
-function confirmSignature(noticeId) {
-    const form = document.getElementById('signature-form');
-    const formData = new FormData(form);
-    const userName = formData.get('userName');
-    
-    if (window.noticeBoard) {
-        window.noticeBoard.signNotice(noticeId, userName);
-    }
 }
 
 // Submit notice with author name validation
