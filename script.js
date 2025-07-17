@@ -190,7 +190,7 @@ class AKLNoticeBoard {
         this.render();
         this.startAutoRefresh();
         
-        console.log('✅ AKL NoticeBoard initialized successfully');
+        console.log('AKL NoticeBoard initialized successfully');
     }
 
     // Get current user (enhanced to store user name)
@@ -311,7 +311,7 @@ class AKLNoticeBoard {
             
             if (awsNotices && awsNotices.length > 0) {
                 this.notices = awsNotices;
-                console.log('✅ Loaded notices from AWS database:', this.notices);
+                console.log('Loaded notices from AWS database:', this.notices);
             } else {
                 throw new Error('No AWS notices available');
             }
@@ -324,7 +324,7 @@ class AKLNoticeBoard {
                     const key = `${sig.noticeId}_${sig.userId}`;
                     this.signatures.set(key, sig);
                 });
-                console.log('✅ Loaded signatures from AWS database:', awsSignatures);
+                console.log('Loaded signatures from AWS database:', awsSignatures);
             }
             
         } catch (error) {
@@ -338,62 +338,6 @@ class AKLNoticeBoard {
     // Load sample data for development/demo
     loadSampleData() {
         this.notices = [
-            {
-                id: 'notice_001',
-                title: 'Critical: New Safety Protocol Implementation',
-                content: 'All DCO technicians must complete the new safety training module by EOD Friday. This includes updated lockout/tagout procedures and emergency response protocols.',
-                category: 'Safety',
-                priority: 'critical',
-                author: 'Safety Manager',
-                createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: true,
-                requiresSignature: true,
-                source: 'Management Email',
-                tags: ['safety', 'training', 'mandatory']
-            },
-            {
-                id: 'notice_002',
-                title: 'System Maintenance Window - This Weekend',
-                content: 'Scheduled maintenance on all AKL cluster systems this Saturday 2AM-6AM NZST. All non-critical operations should be completed before maintenance window.',
-                category: 'Operations',
-                priority: 'high',
-                author: 'DCEO Manager',
-                createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: true,
-                requiresSignature: false,
-                source: 'TacOps Update',
-                tags: ['maintenance', 'weekend', 'systems']
-            },
-            {
-                id: 'notice_003',
-                title: 'Updated Badge Access Procedures',
-                content: 'New badge access procedures are now in effect. Please ensure you tap your badge at all entry points and report any access issues immediately.',
-                category: 'Policy',
-                priority: 'medium',
-                author: 'Security Team',
-                createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: false,
-                requiresSignature: true,
-                source: 'Security Policy',
-                tags: ['security', 'access', 'policy']
-            },
-            {
-                id: 'notice_004',
-                title: 'TacOps Feedback Summary - Week 47',
-                content: 'Great work this week team! Overall performance metrics are up 15%. Special recognition to AKL53 team for zero incidents this week.',
-                category: 'Feedback',
-                priority: 'low',
-                author: 'TacOps Team',
-                createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-                expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                isPinned: false,
-                requiresSignature: false,
-                source: 'TacOps Spreadsheet',
-                tags: ['feedback', 'performance', 'recognition']
-            },
             {
                 id: 'notice_005',
                 title: 'System Test',
@@ -794,141 +738,141 @@ class AKLNoticeBoard {
     }
 
     // Complete the renderNoticeCard method with better date formatting
-renderNoticeCard(notice) {
-    const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
-    // Gather all signatures for this notice
-    const allSignatures = this.allSignatures.filter(sig => sig.noticeId === notice.id);
-    const ackCount = allSignatures.length;
-    // Get current user info from session
-    let session = null, user = null, userId = null, userName = null, isLoggedIn = false;
-    try {
-        session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
-        if (session) session = JSON.parse(session);
-    } catch {}
-    try {
-        user = JSON.parse(localStorage.getItem('akl_auth_user'));
-    } catch {}
-    if (session && (session.id || session.userId)) {
-        userId = session.id || session.userId;
-        userName = session.name || session.userName || session.dbUser?.name;
-        isLoggedIn = true;
-    } else if (user && (user.dbUser?.id || user.id)) {
-        userId = user.dbUser?.id || user.id;
-        userName = user.dbUser?.name || user.name;
-        isLoggedIn = true;
-    }
-    // Find if this user has acknowledged
-    const userSignature = allSignatures.find(sig => sig.userId === userId);
-    const isAcknowledged = !!userSignature;
-    // Date/time for user's signature
-    const ackTime = userSignature ? this.getTimeAgo(userSignature.timestamp) : '';
-    // Signature section logic
-    let signatureSection = '';
-    if (notice.requiresSignature) {
-        if (!isLoggedIn) {
-            signatureSection = `
-                <div class="signature-section signature-required">
-                    <div class="flex items-center space-x-2 text-amber-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                        <span class="font-medium">Login to Acknowledge</span>
-                        <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
-                    </div>
-                    <button class="sign-btn" data-notice-id="${notice.id}" data-login="1">Login to Acknowledge</button>
-                </div>
-            `;
-        } else if (isAcknowledged) {
-            signatureSection = `
-                <div class="signature-section signature-completed">
-                    <div class="flex items-center space-x-2 text-green-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span class="font-medium">Acknowledged by ${userSignature.userName}</span>
-                        <span class="ml-3 text-xs text-green-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
-                    </div>
-                    <div class="text-sm text-slate-400 mt-1">${ackTime}</div>
-                </div>
-            `;
-        } else {
-            signatureSection = `
-                <div class="signature-section signature-required">
-                    <div class="flex items-center space-x-2 text-amber-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
-                        <span class="font-medium">Acknowledge Notice</span>
-                        <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
-                    </div>
-                    <button class="sign-btn" data-notice-id="${notice.id}">✍️ Acknowledge Notice</button>
-                </div>
-            `;
+    renderNoticeCard(notice) {
+        const isExpired = notice.expiresAt && new Date(notice.expiresAt) < new Date();
+        // Gather all signatures for this notice
+        const allSignatures = this.allSignatures.filter(sig => sig.noticeId === notice.id);
+        const ackCount = allSignatures.length;
+        // Get current user info from session
+        let session = null, user = null, userId = null, userName = null, isLoggedIn = false;
+        try {
+            session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+            if (session) session = JSON.parse(session);
+        } catch {}
+        try {
+            user = JSON.parse(localStorage.getItem('akl_auth_user'));
+        } catch {}
+        if (session && (session.id || session.userId)) {
+            userId = session.id || session.userId;
+            userName = session.name || session.userName || session.dbUser?.name;
+            isLoggedIn = true;
+        } else if (user && (user.dbUser?.id || user.id)) {
+            userId = user.dbUser?.id || user.id;
+            userName = user.dbUser?.name || user.name;
+            isLoggedIn = true;
         }
-    }
-    // Render content and check line count
-    const contentHtml = this.renderRichTextContent(notice.content);
-    // Create a temporary element to count lines
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = contentHtml;
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.visibility = 'hidden';
-    tempDiv.style.pointerEvents = 'none';
-    tempDiv.style.width = '100%';
-    tempDiv.className = 'notice-content';
-    document.body.appendChild(tempDiv);
-    // Count lines (approximate by <br> or block children)
-    let lineCount = 1;
-    if (tempDiv.innerHTML.includes('<br>')) {
-        lineCount = tempDiv.innerHTML.split('<br>').length;
-    } else {
-        // Fallback: count block children
-        lineCount = tempDiv.childElementCount || 1;
-    }
-    document.body.removeChild(tempDiv);
-    const needsExpand = lineCount > 5;
-    // Unique IDs for expand/collapse
-    const contentId = `notice-content-${notice.id}`;
-    const pillId = `expand-pill-${notice.id}`;
-    // Expand/collapse pill HTML
-    const expandPillHtml = needsExpand ? `<button class="expand-pill" id="${pillId}" data-notice-id="${notice.id}" data-expanded="false">Expand Notice</button>` : '';
-    return `
-        <div class="notice-card notice-${notice.priority} ${notice.isPinned ? 'notice-pinned' : ''} ${isExpired ? 'opacity-60' : ''}" data-notice-id="${notice.id}">
-            <!-- Notice Header -->
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex-1">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <span class="priority-badge priority-${notice.priority}">
-                            ${this.getPriorityIcon(notice.priority)} ${notice.priority.toUpperCase()}
-                        </span>
-                        <span class="category-badge">
-                            ${this.getCategoryIcon(notice.category)} ${notice.category}
-                        </span>
-                        ${expandPillHtml}
-                        ${notice.isPinned ? '<span class="text-amber-400 text-sm font-medium">📌 PINNED</span>' : ''}
+        // Find if this user has acknowledged
+        const userSignature = allSignatures.find(sig => sig.userId === userId);
+        const isAcknowledged = !!userSignature;
+        // Date/time for user's signature
+        const ackTime = userSignature ? this.getTimeAgo(userSignature.timestamp) : '';
+        // Signature section logic
+        let signatureSection = '';
+        if (notice.requiresSignature) {
+            if (!isLoggedIn) {
+                signatureSection = `
+                    <div class="mt-4 bg-gradient-to-br from-amber-900/40 to-slate-900/60 border border-amber-400/30 rounded-xl p-4 flex flex-col gap-2 shadow-inner backdrop-blur-md">
+                        <div class="flex items-center space-x-2 text-amber-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                            <span class="font-semibold">Login to Acknowledge</span>
+                            <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                        </div>
+                        <button class="sign-btn bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow" data-notice-id="${notice.id}" data-login="1">Login to Acknowledge</button>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-100 mb-2">${notice.title}</h3>
-                    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
-                        <span>👤 ${notice.author}</span>
-                        <span title="${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}">📅 ${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}</span>
-                        <span>📍 ${notice.source}</span>
-                        ${isExpired ? '<span class="text-red-400">⚠️ EXPIRED</span>' : (notice.expiresAt ? `<span>⏰ Expires ${this.getExpiresIn(notice.expiresAt)}</span>` : '')}
+                `;
+            } else if (isAcknowledged) {
+                signatureSection = `
+                    <div class="mt-4 bg-gradient-to-br from-green-900/40 to-slate-900/60 border border-green-400/30 rounded-xl p-4 flex flex-col gap-2 shadow-inner backdrop-blur-md">
+                        <div class="flex items-center space-x-2 text-green-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="font-semibold">Acknowledged by: ${userSignature.userName}</span>
+                            <span class="ml-3 text-xs text-green-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                        </div>
+                        <div class="text-sm text-slate-400 mt-1">${ackTime}</div>
+                    </div>
+                `;
+            } else {
+                signatureSection = `
+                    <div class="mt-4 bg-gradient-to-br from-amber-900/40 to-slate-900/60 border border-amber-400/30 rounded-xl p-4 flex flex-col gap-2 shadow-inner backdrop-blur-md">
+                        <div class="flex items-center space-x-2 text-amber-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+                            <span class="font-semibold">Acknowledge Notice</span>
+                            <span class="ml-3 text-xs text-amber-200">(${ackCount} user${ackCount === 1 ? '' : 's'} acknowledged)</span>
+                        </div>
+                        <button class="sign-btn bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow" data-notice-id="${notice.id}">Acknowledge Notice</button>
+                    </div>
+                `;
+            }
+        }
+        // Render content and check line count
+        const contentHtml = this.renderRichTextContent(notice.content);
+        // Create a temporary element to count lines
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = contentHtml;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.visibility = 'hidden';
+        tempDiv.style.pointerEvents = 'none';
+        tempDiv.style.width = '100%';
+        tempDiv.className = 'notice-content';
+        document.body.appendChild(tempDiv);
+        // Count lines (approximate by <br> or block children)
+        let lineCount = 1;
+        if (tempDiv.innerHTML.includes('<br>')) {
+            lineCount = tempDiv.innerHTML.split('<br>').length;
+        } else {
+            // Fallback: count block children
+            lineCount = tempDiv.childElementCount || 1;
+        }
+        document.body.removeChild(tempDiv);
+        const needsExpand = lineCount > 5;
+        // Unique IDs for expand/collapse
+        const contentId = `notice-content-${notice.id}`;
+        const pillId = `expand-pill-${notice.id}`;
+        // Expand/collapse pill HTML
+        const expandPillHtml = needsExpand ? `<button class="expand-pill bg-slate-700/70 hover:bg-slate-800/80 text-amber-400 font-semibold px-3 py-1 rounded-full shadow transition-all text-xs ml-2" id="${pillId}" data-notice-id="${notice.id}" data-expanded="false">Expand Notice</button>` : '';
+        return `
+            <div class="notice-card bg-gradient-to-br from-slate-800/80 via-slate-900/80 to-blue-900/70 border border-slate-700/60 rounded-2xl shadow-2xl p-6 mb-6 relative overflow-hidden backdrop-blur-xl ${notice.isPinned ? 'ring-2 ring-amber-400/60' : ''} ${isExpired ? 'opacity-60' : ''}" data-notice-id="${notice.id}">
+                <!-- Pinned Icon -->
+                ${notice.isPinned ? '<span class="absolute top-4 right-4 text-amber-400 text-2xl drop-shadow-lg animate-pulse">📌</span>' : ''}
+                <!-- Notice Header -->
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="priority-badge px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm ${notice.priority === 'critical' ? 'bg-red-700/80 text-white border border-red-400/60 animate-pulse' : notice.priority === 'high' ? 'bg-amber-600/80 text-white border border-amber-400/60' : notice.priority === 'medium' ? 'bg-blue-700/80 text-white border border-blue-400/60' : 'bg-emerald-700/80 text-white border border-emerald-400/60'}">
+                                ${this.getPriorityIcon(notice.priority)} ${notice.priority.toUpperCase()}
+                            </span>
+                            <span class="category-badge px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/70 text-blue-200 border border-blue-400/30 shadow-sm">
+                                ${this.getCategoryIcon(notice.category)} ${notice.category}
+                            </span>
+                            ${expandPillHtml}
+                            ${notice.isPinned ? '<span class="text-amber-400 text-xs font-semibold ml-2">PINNED</span>' : ''}
+                        </div>
+                        <h3 class="text-xl font-extrabold text-slate-100 mb-2 drop-shadow">${notice.title}</h3>
+                        <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
+                            <span>[By: ${notice.author}]</span>
+                            <span title="${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}">[${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}]</span>
+                            <span>[Source: ${notice.source}]</span>
+                            ${isExpired ? '<span class="text-red-400 font-semibold">⚠️ EXPIRED</span>' : (notice.expiresAt ? `<span>[Expires ${this.getExpiresIn(notice.expiresAt)}]</span>` : '')}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- Notice Content with Rich Text -->
-            <div class="mb-4 notice-content${needsExpand ? ' notice-content-collapsed' : ''}" id="${contentId}">
-                ${contentHtml}
-            </div>
-            <!-- Tags -->
-            ${notice.tags && notice.tags.length > 0 ? `
-                <div class="flex flex-wrap gap-2 mb-4">
-                    ${notice.tags.map(tag => `
-                        <span class="bg-slate-700 text-slate-300 px-2 py-1 rounded-full text-xs font-medium">
-                            #${tag}
-                        </span>
-                    `).join('')}
+                <!-- Notice Content with Rich Text -->
+                <div class="mb-4 notice-content${needsExpand ? ' notice-content-collapsed' : ''} text-slate-200/90 leading-relaxed" id="${contentId}">
+                    ${contentHtml}
                 </div>
-            ` : ''}
-            <!-- Signature Section -->
-            ${signatureSection}
-        </div>
-    `;
-}
+                <!-- Tags -->
+                ${notice.tags && notice.tags.length > 0 ? `
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        ${notice.tags.map(tag => `
+                            <span class="bg-blue-900/60 text-blue-200 px-3 py-1 rounded-full text-xs font-medium border border-blue-400/20 shadow-sm">#${tag}</span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                <!-- Signature Section -->
+                ${signatureSection}
+            </div>
+        `;
+    }
 	
 	// NEW: Render rich text content
     renderRichTextContent(content) {
@@ -948,21 +892,21 @@ renderNoticeCard(notice) {
             medium: '📋',
             low: '💡'
         };
-        return icons[priority] || '📋';
+        return icons[priority] || '';
     }
 
     getCategoryIcon(category) {
         const icons = {
-            Safety: '🦺',
-            Operations: '⚙️',
-            Policy: '📜',
-            People: '👥',
-            Feedback: '💬',
-            Training: '🎓',
-            Maintenance: '🔧',
-            coffee: '☕'
+            Safety: '',
+            Operations: '',
+            Policy: '',
+            People: '',
+            Feedback: '',
+            Training: '',
+            Maintenance: '',
+            coffee: ''
         };
-        return icons[category] || '📋';
+        return icons[category] || '';
     }
 
     getTimeAgo(timestamp) {
@@ -1157,8 +1101,8 @@ renderNoticeCard(notice) {
         if (this.currentFilter !== 'all') {
             const filterNames = {
                 pinned: '📌 Pinned Only',
-                unsigned: '✍️ Needs Signature',
-                categories: '🏷️ By Category'
+                unsigned: 'Needs Acknowledgement',
+                categories: 'By Category'
             };
             
             pills.push(`
@@ -1172,12 +1116,12 @@ renderNoticeCard(notice) {
             if (this.currentFilter === 'categories') {
                 const categories = ['Safety', 'Operations', 'Policy', 'People', 'Training', 'Maintenance'];
                 const categoryIcons = {
-                    Safety: '🦺',
-                    Operations: '⚙️',
-                    Policy: '📜',
-                    People: '👥',
-                    Training: '🎓',
-                    Maintenance: '🔧'
+                    Safety: '',
+                    Operations: '',
+                    Policy: '',
+                    People: '',
+                    Training: '',
+                    Maintenance: ''
                 };
                 
                 categories.forEach(category => {
@@ -1185,7 +1129,7 @@ renderNoticeCard(notice) {
                     const categoryCount = this.notices.filter(notice => notice.category === category).length;
                     
                     pills.push(`
-                        <span class="filter-pill sub-pill ${isActive ? 'active' : ''}" 
+                        <span class="filter-pill sub-pill category-pill ${isActive ? 'active' : ''}" 
                               onclick="window.noticeBoard.selectCategory('${category}')" 
                               style="cursor: pointer;">
                             ${categoryIcons[category]} ${category} (${categoryCount})
@@ -1242,7 +1186,7 @@ renderNoticeCard(notice) {
         toast.className = `toast ${type}`;
         
         const icons = {
-            success: '✅',
+            success: '',
             error: '❌',
             warning: '⚠️',
             info: 'ℹ️'
@@ -1303,12 +1247,12 @@ showPostNoticeModal() {
                             <label class="form-label">Category *</label>
                             <select name="category" class="form-select" required>
                                 <option value="">Select Category</option>
-                                <option value="Safety">🦺 Safety</option>
-                                <option value="Operations">⚙️ Operations</option>
-                                <option value="Policy">📜 Policy</option>
-                                <option value="People">👥 People</option>
-                                <option value="Training">🎓 Training</option>
-                                <option value="Maintenance">🔧 Maintenance</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Policy">Policy</option>
+                                <option value="People">People</option>
+                                <option value="Training">Training</option>
+                                <option value="Maintenance">Maintenance</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1337,7 +1281,7 @@ showPostNoticeModal() {
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="checkbox" name="requiresSignature" class="rounded">
-                            <span class="text-sm">✍️ Requires acknowledgment</span>
+                            <span class="text-sm">Requires acknowledgment</span>
                         </label>
                     </div>
                 </form>

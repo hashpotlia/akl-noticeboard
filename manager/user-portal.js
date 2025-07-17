@@ -86,12 +86,16 @@ class UserProfile {
     }
 
     async init() {
-        console.log('🚀 Initializing User Profile...');
+        console.log('Initializing User Profile...');
+        
+        // THEME: Apply saved theme preference
+        this.applySavedTheme();
+        this.setupThemeToggle();
         
         const isAuth = await this.checkAuthStatus();
         
         if (!isAuth) {
-            console.log('❌ No valid USER session, redirecting to main noticeboard...');
+            console.log('No valid USER session, redirecting to main noticeboard...');
             this.redirectToMainNoticeboard();
             return;
         }
@@ -110,7 +114,7 @@ class UserProfile {
         this.updateStaticText();
         this.startAutoRefresh();
         
-        console.log('✅ User Profile initialized');
+        console.log('User Profile initialized');
     }
 
     startAutoRefresh() {
@@ -166,7 +170,7 @@ class UserProfile {
     async loadUserData() {
         try {
             this.loadError = null;
-            console.log('📊 Loading user profile data...');
+            console.log('Loading user profile data...');
             
             // Fetch all notices and signatures for statistics
             const [notices, allSignatures] = await Promise.all([
@@ -181,7 +185,7 @@ class UserProfile {
             const userId = this.currentUser.dbUser?.id || this.currentUser.id;
             this.userSignatures = allSignatures.filter(sig => sig.userId === userId);
             
-            console.log('✅ User profile data loaded:', {
+            console.log('User profile data loaded:', {
                 notices: this.notices.length,
                 allSignatures: this.allSignatures.length,
                 userSignatures: this.userSignatures.length
@@ -295,7 +299,7 @@ class UserProfile {
         if (sorted.length === 0) {
             ackHistoryEl.innerHTML = `
                 <div class="text-center text-slate-400 py-8">
-                    <div class="text-4xl mb-2">📝</div>
+                    
                     <p>${this.t('noAcks')}</p>
                 </div>
             `;
@@ -317,7 +321,7 @@ class UserProfile {
                 <div class="bg-slate-700 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-2">
                         <span class="font-semibold text-white">${notice ? notice.title : 'Notice'}</span>
-                        <span class="text-xs text-green-400">✅ Acknowledged</span>
+                        <span class="text-xs text-green-400">Acknowledged</span>
                     </div>
                     <div class="flex items-center justify-between text-xs text-slate-400">
                         <span>${notice ? notice.category : 'Unknown Category'}</span>
@@ -338,7 +342,7 @@ class UserProfile {
         if (sorted.length === 0) {
             timelineEl.innerHTML = `
                 <div class="text-center text-slate-400 py-8">
-                    <div class="text-4xl mb-2">📊</div>
+                    
                     <p>No activity data available</p>
                 </div>
             `;
@@ -391,7 +395,7 @@ class UserProfile {
         
         container.innerHTML = `
             <div class="text-center py-16">
-                <div class="text-6xl mb-4">❌</div>
+                
                 <h3 class="text-xl font-bold text-red-400 mb-2">${this.t('errorLoading')}</h3>
                 <p class="text-slate-400 mb-6">${this.loadError || 'An unknown error occurred while loading profile data.'}</p>
                 <button id="retry-load-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors">${this.t('retry')}</button>
@@ -546,6 +550,43 @@ class UserProfile {
         
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
+    }
+
+    // THEME: Apply saved theme on load
+    applySavedTheme() {
+        const theme = localStorage.getItem('akl_userportal_theme');
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+            this.updateThemeToggleBtn('light');
+        } else {
+            document.body.classList.remove('light-mode');
+            this.updateThemeToggleBtn('dark');
+        }
+    }
+
+    // THEME: Setup toggle button
+    setupThemeToggle() {
+        const btn = document.getElementById('theme-toggle-btn');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('akl_userportal_theme', isLight ? 'light' : 'dark');
+            this.updateThemeToggleBtn(isLight ? 'light' : 'dark');
+        });
+    }
+
+    // THEME: Update toggle button icon/label
+    updateThemeToggleBtn(mode) {
+        const icon = document.getElementById('theme-toggle-icon');
+        const label = document.getElementById('theme-toggle-label');
+        if (!icon || !label) return;
+        if (mode === 'light') {
+            icon.textContent = '☀️';
+            label.textContent = 'Dark Mode';
+        } else {
+            icon.textContent = '🌙';
+            label.textContent = 'Light Mode';
+        }
     }
 }
 

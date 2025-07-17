@@ -31,152 +31,131 @@
     <!-- Admin Specific Styles -->
     <link rel="stylesheet" href="admin-style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Glide.js Carousel (vanilla, shadcn-inspired) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@glidejs/glide/dist/css/glide.core.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@glidejs/glide/dist/glide.min.js"></script>
 </head>
 
 <body class="antialiased">
 
 <!-- Updated Login modal -->
 <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-    <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4 border border-slate-700">
+    <div class="bg-slate-800/90 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full mx-4 border border-slate-700 shadow-2xl">
         <div class="text-center mb-6">
-            
-            <h2 class="text-2xl font-bold text-white mb-2">Manager Portal</h2>
+            <h2 class="text-2xl font-bold text-amber-400 mb-2">Manager Portal</h2>
             <p class="text-slate-400" id="auth-subtitle">Please sign in to access the NoticeBoard Portal</p>
         </div>
-        
         <!-- Login Form -->
         <form id="login-form" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
                 <input type="email" id="login-email" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Enter your email">
             </div>
-            
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
                 <input type="password" id="login-password" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Enter your password">
             </div>
-            
             <button type="submit" id="login-btn" 
-                    class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                    class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg">
                 Sign In
             </button>
         </form>
-
         <!-- Signup Form (Initially Hidden) -->
         <form id="signup-form" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
                 <input type="email" id="signup-email" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Enter your email">
             </div>
-            
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
                 <input type="password" id="signup-password" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Create a password (min 8 characters)">
             </div>
-            
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
                 <input type="password" id="signup-confirm-password" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Confirm your password">
             </div>
-            
             <button type="submit" id="signup-btn" 
-                    class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg">
                 Create Account
             </button>
         </form>
-		
-		<!-- Signup Confirmation Form (Initially Hidden) -->
-<form id="signup-confirm-form" class="space-y-4 hidden">
-    <div class="text-center mb-4">
-        
-        <p class="text-sm text-slate-400">We've sent a verification code to your email</p>
-        <p class="text-xs text-slate-500 mt-1">Check your inbox and spam folder</p>
-    </div>
-    
-    <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
-        <input type="text" id="signup-code" required 
-               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-               placeholder="Enter 6-digit code"
-               maxlength="6">
-    </div>
-    
-    <button type="submit" id="signup-confirm-btn" 
-            class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
-        Verify Account
-    </button>
-    
-    <div class="text-center">
-        <p class="text-sm text-slate-400 mb-2">Didn't receive the code?</p>
-        <button type="button" id="resend-signup-code-btn" 
-                class="text-blue-400 hover:text-blue-300 text-sm transition-colors">
-            Resend Code
-        </button>
-    </div>
-</form>
-
-
+        <!-- Signup Confirmation Form (Initially Hidden) -->
+        <form id="signup-confirm-form" class="space-y-4 hidden">
+            <div class="text-center mb-4">
+                <p class="text-sm text-slate-400">We've sent a verification code to your email</p>
+                <p class="text-xs text-slate-500 mt-1">Check your inbox and spam folder</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+                <input type="text" id="signup-code" required 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
+                       placeholder="Enter 6-digit code"
+                       maxlength="6">
+            </div>
+            <button type="submit" id="signup-confirm-btn" 
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg">
+                Verify Account
+            </button>
+            <div class="text-center">
+                <p class="text-sm text-slate-400 mb-2">Didn't receive the code?</p>
+                <button type="button" id="resend-signup-code-btn" 
+                        class="text-blue-400 hover:text-blue-300 text-sm transition-colors">
+                    Resend Code
+                </button>
+            </div>
+        </form>
         <!-- Password Reset Form (Initially Hidden) -->
         <form id="reset-form" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
                 <input type="email" id="reset-email" required 
-                       class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
                        placeholder="Enter your email">
             </div>
-            
             <button type="submit" id="reset-btn" 
-                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg">
                 Send Reset Link
             </button>
         </form>
-		
-		<!-- Password Reset Confirmation Form (Initially Hidden) -->
-<form id="reset-confirm-form" class="space-y-4 hidden">
-    <div class="text-center mb-4">
-        <p class="text-sm text-slate-400">Enter the verification code sent to your email</p>
-    </div>
-    
-    <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
-        <input type="text" id="reset-code" required 
-               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-               placeholder="Enter 6-digit code">
-    </div>
-    
-    <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">New Password</label>
-        <input type="password" id="reset-new-password" required 
-               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-               placeholder="Enter new password (min 8 characters)">
-    </div>
-    
-    <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
-        <input type="password" id="reset-confirm-password" required 
-               class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-               placeholder="Confirm new password">
-    </div>
-    
-    <button type="submit" id="reset-confirm-btn" 
-            class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
-        Reset Password
-    </button>
-</form>
-
-        
+        <!-- Password Reset Confirmation Form (Initially Hidden) -->
+        <form id="reset-confirm-form" class="space-y-4 hidden">
+            <div class="text-center mb-4">
+                <p class="text-sm text-slate-400">Enter the verification code sent to your email</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+                <input type="text" id="reset-code" required 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
+                       placeholder="Enter 6-digit code">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                <input type="password" id="reset-new-password" required 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
+                       placeholder="Enter new password (min 8 characters)">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
+                <input type="password" id="reset-confirm-password" required 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 focus:ring-amber-500"
+                       placeholder="Confirm new password">
+            </div>
+            <button type="submit" id="reset-confirm-btn" 
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg">
+                Reset Password
+            </button>
+        </form>
         <div id="login-error" class="mt-4 p-3 bg-red-900/50 border border-red-500 rounded-lg text-red-300 text-sm hidden"></div>
-        
         <!-- Auth Mode Switcher -->
         <div class="mt-6 text-center space-y-2">
             <div id="login-mode-switcher">
@@ -187,41 +166,33 @@
                     Forgot Password?
                 </button>
             </div>
-            
             <div id="signup-mode-switcher" class="hidden">
                 <button type="button" id="back-to-login" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
                     ← Back to Sign In
                 </button>
             </div>
-            
             <div id="reset-mode-switcher" class="hidden">
                 <button type="button" id="back-to-login-2" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
                     ← Back to Sign In
                 </button>
             </div>
-			
-			<div id="reset-confirm-mode-switcher" class="hidden">
-    <button type="button" id="back-to-reset" class="text-blue-400 hover:text-blue-300 text-sm transition-colors mr-4">
-        ← Back to Reset
-    </button>
-    <button type="button" id="back-to-login-3" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
-        ← Back to Sign In
-    </button>
-</div>
-
-<div id="signup-confirm-mode-switcher" class="hidden">
-    <button type="button" id="back-to-signup" class="text-green-400 hover:text-green-300 text-sm transition-colors mr-4">
-        ← Back to Sign Up
-    </button>
-    <button type="button" id="back-to-login-4" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
-        ← Back to Sign In
-    </button>
-</div>
-
-
-			
+            <div id="reset-confirm-mode-switcher" class="hidden">
+                <button type="button" id="back-to-reset" class="text-blue-400 hover:text-blue-300 text-sm transition-colors mr-4">
+                    ← Back to Reset
+                </button>
+                <button type="button" id="back-to-login-3" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+                    ← Back to Sign In
+                </button>
+            </div>
+            <div id="signup-confirm-mode-switcher" class="hidden">
+                <button type="button" id="back-to-signup" class="text-green-400 hover:text-green-300 text-sm transition-colors mr-4">
+                    ← Back to Sign Up
+                </button>
+                <button type="button" id="back-to-login-4" class="text-amber-400 hover:text-amber-300 text-sm transition-colors">
+                    ← Back to Sign In
+                </button>
+            </div>
         </div>
-        
         <div class="mt-4 text-center">
             <a href="../index.html" class="text-slate-500 hover:text-slate-400 text-sm transition-colors">
                 ← Back to NoticeBoard
@@ -254,19 +225,19 @@
 
                     <!-- Navigation -->
 					<div class="hidden md:flex items-center space-x-3">
-						<button id="nav-dashboard" class="admin-tab active" data-tab="dashboard">
+						<button id="nav-dashboard" class="admin-tab active text-sm font-semibold px-4 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="dashboard">
 							Dashboard
 						</button>
-						<button id="nav-notices" class="admin-tab" data-tab="notices">
+						<button id="nav-notices" class="admin-tab text-sm font-semibold px-4 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="notices">
 							Manage Notices
 						</button>
-						<button id="nav-users" class="admin-tab" data-tab="users">
+						<button id="nav-users" class="admin-tab text-sm font-semibold px-4 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="users">
 							Manage Users
 						</button>
-						<button id="nav-acknowledgments" class="admin-tab" data-tab="acknowledgments">
+						<button id="nav-acknowledgments" class="admin-tab text-sm font-semibold px-4 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="acknowledgments">
 							Acknowledgments
 						</button>
-						<button id="nav-analytics" class="admin-tab" data-tab="analytics">
+						<button id="nav-analytics" class="admin-tab text-sm font-semibold px-4 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="analytics">
 							Analytics
 						</button>
 					</div>
@@ -308,11 +279,11 @@
                 <!-- Mobile Navigation -->
 				<div id="mobile-nav" class="hidden md:hidden pb-4 border-t border-slate-800 mt-4">
 					<div class="flex flex-col space-y-2 pt-4">
-						<button class="admin-tab mobile text-left px-3 py-2 rounded-md transition-colors" data-tab="dashboard">📊 Dashboard</button>
-						<button class="admin-tab mobile text-left px-3 py-2 rounded-md transition-colors" data-tab="notices">📝 Manage Notices</button>
-						<button class="admin-tab mobile text-left px-3 py-2 rounded-md transition-colors" data-tab="users">👥 Manage Users</button>
-						<button class="admin-tab mobile text-left px-3 py-2 rounded-md transition-colors" data-tab="acknowledgments">✍️ Acknowledgments</button>
-						<button class="admin-tab mobile text-left px-3 py-2 rounded-md transition-colors" data-tab="analytics">📈 Analytics</button>
+						<button class="admin-tab mobile text-left px-3 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="dashboard">Dashboard</button>
+						<button class="admin-tab mobile text-left px-3 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="notices">Manage Notices</button>
+						<button class="admin-tab mobile text-left px-3 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="users">Manage Users</button>
+						<button class="admin-tab mobile text-left px-3 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="acknowledgments">Acknowledgments</button>
+						<button class="admin-tab mobile text-left px-3 py-2 rounded-full transition-all shadow bg-slate-800/60 hover:bg-amber-500/20 hover:text-amber-400 border border-slate-700/60" data-tab="analytics">Analytics</button>
 					</div>
 				</div>
 
@@ -330,66 +301,55 @@
                 <div id="dashboard-content" class="admin-tab-content active">
                     <!-- Key Metrics Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div class="metric-card bg-blue-900/30 border-blue-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-blue-400 text-sm font-medium">Total Notices</p>
-                                    <p class="text-3xl font-bold text-white" id="total-notices-count">0</p>
-                                </div>
-                                
+                        <div class="bg-gradient-to-br from-blue-900/60 to-slate-900/80 backdrop-blur-lg border border-blue-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-blue-400/20 to-transparent rotate-12"></div>
                             </div>
+                            <p class="text-blue-400 text-sm font-medium">Total Notices</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="total-notices-count">0</p>
                         </div>
-                        
-                        <div class="metric-card bg-amber-900/30 border-amber-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-amber-400 text-sm font-medium">Pending Acknowledgments</p>
-                                    <p class="text-3xl font-bold text-white" id="pending-acks-count">0</p>
-                                </div>
-                                
+                        <div class="bg-gradient-to-br from-amber-900/60 to-slate-900/80 backdrop-blur-lg border border-amber-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-amber-400/20 to-transparent rotate-12"></div>
                             </div>
+                            <p class="text-amber-400 text-sm font-medium">Pending Acknowledgments</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="pending-acks-count">0</p>
                         </div>
-                        
-                        <div class="metric-card bg-red-900/30 border-red-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-red-400 text-sm font-medium">Critical Notices</p>
-                                    <p class="text-3xl font-bold text-white" id="critical-notices-count">0</p>
-                                </div>
-                                
+                        <div class="bg-gradient-to-br from-red-900/60 to-slate-900/80 backdrop-blur-lg border border-red-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-red-400/20 to-transparent rotate-12"></div>
                             </div>
+                            <p class="text-red-400 text-sm font-medium">Critical Notices</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="critical-notices-count">0</p>
                         </div>
-                        
-                        <div class="metric-card bg-green-900/30 border-green-500">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-green-400 text-sm font-medium">Acknowledgment Rate</p>
-                                    <p class="text-3xl font-bold text-white" id="ack-rate">0%</p>
-                                </div>
-                                
+                        <div class="bg-gradient-to-br from-green-900/60 to-slate-900/80 backdrop-blur-lg border border-green-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-green-400/20 to-transparent rotate-12"></div>
                             </div>
+                            <p class="text-green-400 text-sm font-medium">Acknowledgment Rate</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="ack-rate">0%</p>
                         </div>
                     </div>
 
                     <!-- Quick Actions -->
-                    <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-8">
-                        <h2 class="text-xl font-bold text-white mb-4">Quick Actions</h2>
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-8 mb-8">
+                        <h2 class="text-xl font-bold text-amber-400 mb-4">Quick Actions</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <button class="quick-action-btn bg-amber-600 hover:bg-amber-500" onclick="showPostNoticeModal()">
+                            <button class="quick-action-btn bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg" onclick="showPostNoticeModal()">
                                 Post New Notice
                             </button>
-                            <button class="quick-action-btn bg-red-600 hover:bg-red-500" onclick="postCriticalNotice()">
+                            <button class="quick-action-btn bg-red-600 hover:bg-red-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg" onclick="postCriticalNotice()">
                                 Post Critical Notice
                             </button>
-                            <button class="quick-action-btn bg-blue-600 hover:bg-blue-500" onclick="exportComplianceReport()">
+                            <button class="quick-action-btn bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg" onclick="exportComplianceReport()">
                                 Export Compliance Report
                             </button>
                         </div>
                     </div>
 
                     <!-- Recent Activity -->
-                    <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                        <h2 class="text-xl font-bold text-white mb-4">Recent Activity</h2>
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-8">
+                        <h2 class="text-xl font-bold text-amber-400 mb-4">Recent Activity</h2>
                         <div id="recent-activity" class="space-y-3">
                             <!-- Dynamic activity feed -->
                         </div>
@@ -400,38 +360,38 @@
                 <div id="notices-content" class="admin-tab-content">
                     <!-- Notice Management Header -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <h2 class="text-2xl font-bold text-white">Notice Management</h2>
+                        <h2 class="text-2xl font-bold text-amber-400">Notice Management</h2>
                         <div class="flex items-center space-x-4">
-                            <button class="btn-primary" onclick="showPostNoticeModal()">
+                            <button class="btn-primary bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="showPostNoticeModal()">
                                 Post New Notice
                             </button>
-                            <button class="btn-secondary" onclick="showBulkActionsModal()">
+                            <button class="btn-secondary bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="showBulkActionsModal()">
                                 Bulk Actions
                             </button>
                         </div>
                     </div>
 
                     <!-- Filters and Search -->
-                    <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 mb-6">
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-6 mb-6">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <input type="text" id="notice-search" placeholder="Search notices..." class="form-input">
-                            <select id="category-filter" class="form-select">
+                            <input type="text" id="notice-search" placeholder="Search notices..." class="form-input bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500" />
+                            <select id="category-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
                                 <option value="">All Categories</option>
-                                <option value="Safety">🦺 Safety</option>
-                                <option value="Operations">⚙️ Operations</option>
-                                <option value="Policy">📜 Policy</option>
-                                <option value="People">👥 People</option>
-                                <option value="Training">🎓 Training</option>
-                                <option value="Maintenance">🔧 Maintenance</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Policy">Policy</option>
+                                <option value="People">People</option>
+                                <option value="Training">Training</option>
+                                <option value="Maintenance">Maintenance</option>
                             </select>
-                            <select id="priority-filter" class="form-select">
+                            <select id="priority-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
                                 <option value="">All Priorities</option>
-                                <option value="critical">🚨 Critical</option>
-                                <option value="high">⚠️ High</option>
-                                <option value="medium">📋 Medium</option>
-                                <option value="low">💡 Low</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
                             </select>
-                            <select id="status-filter" class="form-select">
+                            <select id="status-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
                                 <option value="">All Status</option>
                                 <option value="active">Active</option>
                                 <option value="expired">Expired</option>
@@ -441,24 +401,24 @@
                     </div>
 
                     <!-- Notices Table -->
-                    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-700">
                                     <tr>
-                                        <th class="table-header">
-                                            <input type="checkbox" id="select-all-notices" class="rounded">
+                                        <th class="table-header p-4">
+                                            <input type="checkbox" id="select-all-notices" class="rounded border-slate-600 bg-slate-900 text-amber-500 focus:ring-amber-500" />
                                         </th>
-                                        <th class="table-header">Title</th>
-                                        <th class="table-header">Category</th>
-                                        <th class="table-header">Priority</th>
-                                        <th class="table-header">Author</th>
-                                        <th class="table-header">Created</th>
-                                        <th class="table-header">Ack Rate</th>
-                                        <th class="table-header">Actions</th>
+                                        <th class="table-header p-4">Title</th>
+                                        <th class="table-header p-4">Category</th>
+                                        <th class="table-header p-4">Priority</th>
+                                        <th class="table-header p-4">Author</th>
+                                        <th class="table-header p-4">Created</th>
+                                        <th class="table-header p-4">Ack Rate</th>
+                                        <th class="table-header p-4">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="notices-table-body">
+                                <tbody id="notices-table-body" class="divide-y divide-slate-700">
                                     <!-- Dynamic notice rows -->
                                 </tbody>
                             </table>
@@ -472,133 +432,123 @@
                 </div>
 				
 				<!-- User Management Content -->
-<div id="users-content" class="admin-tab-content">
-    <!-- User Management Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h2 class="text-2xl font-bold text-white">User Management</h2>
-        <div class="flex items-center space-x-4">
-            <button class="btn-primary" onclick="showCreateUserModal()">
-                Add New User
-            </button>
-            <button class="btn-secondary" onclick="showBulkUserActionsModal()">
-                Bulk Actions
-            </button>
-        </div>
-    </div>
+                <div id="users-content" class="admin-tab-content">
+                    <!-- User Management Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <h2 class="text-2xl font-bold text-amber-400">User Management</h2>
+                        <div class="flex items-center space-x-4">
+                            <button class="btn-primary bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="showCreateUserModal()">
+                                Add New User
+                            </button>
+                            <button class="btn-secondary bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="showBulkUserActionsModal()">
+                                Bulk Actions
+                            </button>
+                        </div>
+                    </div>
 
-    <!-- User Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div class="metric-card bg-blue-900/30 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-400 text-sm font-medium">Total Users</p>
-                    <p class="text-3xl font-bold text-white" id="total-users-stat">0</p>
-                </div>
-                
-            </div>
-        </div>
-        
-        <div class="metric-card bg-green-900/30 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-green-400 text-sm font-medium">Active Users</p>
-                    <p class="text-3xl font-bold text-white" id="active-users-stat">0</p>
-                </div>
-                
-            </div>
-        </div>
-        
-        <div class="metric-card bg-amber-900/30 border-amber-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-amber-400 text-sm font-medium">Managers</p>
-                    <p class="text-3xl font-bold text-white" id="managers-stat">0</p>
-                </div>
-                
-            </div>
-        </div>
-        
-        <div class="metric-card bg-red-900/30 border-red-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-red-400 text-sm font-medium">Super Admins</p>
-                    <p class="text-3xl font-bold text-white" id="admins-stat">0</p>
-                </div>
-                
-            </div>
-        </div>
-    </div>
+                    <!-- User Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-blue-900/60 to-slate-900/80 backdrop-blur-lg border border-blue-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-blue-400/20 to-transparent rotate-12"></div>
+                            </div>
+                            <p class="text-blue-400 text-sm font-medium">Total Users</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="total-users-stat">0</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-900/60 to-slate-900/80 backdrop-blur-lg border border-green-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-green-400/20 to-transparent rotate-12"></div>
+                            </div>
+                            <p class="text-green-400 text-sm font-medium">Active Users</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="active-users-stat">0</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-amber-900/60 to-slate-900/80 backdrop-blur-lg border border-amber-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-amber-400/20 to-transparent rotate-12"></div>
+                            </div>
+                            <p class="text-amber-400 text-sm font-medium">Managers</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="managers-stat">0</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-red-900/60 to-slate-900/80 backdrop-blur-lg border border-red-500 rounded-2xl shadow-2xl p-6 flex flex-col justify-between group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-red-400/20 to-transparent rotate-12"></div>
+                            </div>
+                            <p class="text-red-400 text-sm font-medium">Super Admins</p>
+                            <p class="text-3xl font-bold text-white mt-2" id="admins-stat">0</p>
+                        </div>
+                    </div>
 
-    <!-- User Filters -->
-    <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" id="user-search" placeholder="Search users..." class="form-input">
-            <select id="role-filter" class="form-select">
-                <option value="">All Roles</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-                <option value="MANAGER">Manager</option>
-                <option value="USER">User</option>
-            </select>
-            <select id="department-filter" class="form-select">
-                <option value="">All Departments</option>
-                <option value="Management">Management</option>
-                <option value="Operations">Operations</option>
-                <option value="Safety">Safety</option>
-                <option value="Maintenance">Maintenance</option>
-                <option value="General">General</option>
-            </select>
-            <select id="user-status-filter" class="form-select">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
-        </div>
-    </div>
+                    <!-- User Filters -->
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-6 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input type="text" id="user-search" placeholder="Search users..." class="form-input bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500" />
+                            <select id="role-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">All Roles</option>
+                                <option value="SUPER_ADMIN">Super Admin</option>
+                                <option value="MANAGER">Manager</option>
+                                <option value="USER">User</option>
+                            </select>
+                            <select id="department-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">All Departments</option>
+                                <option value="Management">Management</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Safety">Safety</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="General">General</option>
+                            </select>
+                            <select id="user-status-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
 
-    <!-- Users Table -->
-    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-slate-700">
-                    <tr>
-                        <th class="table-header">
-                            <input type="checkbox" id="select-all-users" class="rounded">
-                        </th>
-                        <th class="table-header">User</th>
-                        <th class="table-header">Role</th>
-                        <th class="table-header">Department</th>
-                        <th class="table-header">Status</th>
-                        <th class="table-header">Last Login</th>
-                        <th class="table-header">Created</th>
-                        <th class="table-header">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body">
-                    <!-- Dynamic user rows -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <!-- Users Table -->
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-700">
+                                    <tr>
+                                        <th class="table-header p-4">
+                                            <input type="checkbox" id="select-all-users" class="rounded border-slate-600 bg-slate-900 text-amber-500 focus:ring-amber-500" />
+                                        </th>
+                                        <th class="table-header p-4">User</th>
+                                        <th class="table-header p-4">Role</th>
+                                        <th class="table-header p-4">Department</th>
+                                        <th class="table-header p-4">Status</th>
+                                        <th class="table-header p-4">Last Login</th>
+                                        <th class="table-header p-4">Created</th>
+                                        <th class="table-header p-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body" class="divide-y divide-slate-700">
+                                    <!-- Dynamic user rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
 
                 <!-- Acknowledgments Content -->
                 <div id="acknowledgments-content" class="admin-tab-content">
-                    <h2 class="text-2xl font-bold text-white mb-6">Acknowledgment Tracking</h2>
-
-                    <!-- Acknowledgment Overview -->
+                    <h2 class="text-2xl font-bold text-amber-400 mb-6">Acknowledgment Tracking</h2>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                         <!-- By Notice View -->
-                        <div class="lg:col-span-2 bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4">By Notice</h3>
+                        <div class="lg:col-span-2 bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-6">
+                            <h3 class="text-xl font-bold text-amber-400 mb-4">By Notice</h3>
                             <div class="space-y-4" id="notice-ack-list">
                                 <!-- Dynamic notice acknowledgment cards -->
                             </div>
                         </div>
 
                         <!-- Quick Stats -->
-                        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4">Quick Stats</h3>
+                        <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl p-6 flex flex-col group relative overflow-hidden">
+                            <div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] animate-shimmer bg-gradient-to-r from-transparent via-amber-400/20 to-transparent rotate-12"></div>
+                            </div>
+                            <h3 class="text-xl font-bold text-amber-400 mb-4">Quick Stats</h3>
                             <div class="space-y-4">
                                 <div class="stat-item">
                                     <span class="text-slate-400">Overall Compliance Rate</span>
@@ -622,27 +572,25 @@
                     </div>
 
                     <!-- Detailed Acknowledgment Table -->
-                    <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-                        <div class="p-4 border-b border-slate-700">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-lg font-bold text-white">Detailed Acknowledgment Log</h3>
-                                <button class="btn-secondary" onclick="exportAcknowledgmentReport()">
-                                    Export Report
-                                </button>
-                            </div>
+                    <div class="bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-amber-400 mb-0">Detailed Acknowledgment Log</h3>
+                            <button class="btn-secondary bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="exportAcknowledgmentReport()">
+                                Export Report
+                            </button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-700">
                                     <tr>
-                                        <th class="table-header">Notice</th>
-                                        <th class="table-header">User</th>
-                                        <th class="table-header">Acknowledged At</th>
-                                        <th class="table-header">Response Time</th>
-                                        <th class="table-header">Status</th>
+                                        <th class="table-header p-4">Notice</th>
+                                        <th class="table-header p-4">User</th>
+                                        <th class="table-header p-4">Acknowledged At</th>
+                                        <th class="table-header p-4">Response Time</th>
+                                        <th class="table-header p-4">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody id="acknowledgment-table-body">
+                                <tbody id="acknowledgment-table-body" class="divide-y divide-slate-700">
                                     <!-- Dynamic acknowledgment rows -->
                                 </tbody>
                             </table>
@@ -652,18 +600,18 @@
 
                 <!-- Analytics Content -->
                 <div id="analytics-content" class="admin-tab-content">
-                    <h2 class="text-2xl font-bold text-white mb-6">Analytics & Reports</h2>
+                    <h2 class="text-2xl font-bold text-amber-400 mb-6">Analytics & Reports</h2>
                     <!-- Analytics Filters -->
                     <div class="flex flex-wrap gap-4 mb-6">
                         <div>
                             <label for="analytics-date-range" class="block text-xs text-slate-400 mb-1">Date Range</label>
-                            <input type="date" id="analytics-date-start" class="form-input w-auto" />
+                            <input type="date" id="analytics-date-start" class="form-input bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500 w-auto" />
                             <span class="mx-1 text-slate-400">to</span>
-                            <input type="date" id="analytics-date-end" class="form-input w-auto" />
+                            <input type="date" id="analytics-date-end" class="form-input bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500 w-auto" />
                         </div>
                         <div>
                             <label for="analytics-category-filter" class="block text-xs text-slate-400 mb-1">Category</label>
-                            <select id="analytics-category-filter" class="form-select w-auto">
+                            <select id="analytics-category-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500 w-auto">
                                 <option value="">All</option>
                                 <option value="Safety">Safety</option>
                                 <option value="Operations">Operations</option>
@@ -675,7 +623,7 @@
                         </div>
                         <div>
                             <label for="analytics-role-filter" class="block text-xs text-slate-400 mb-1">Role</label>
-                            <select id="analytics-role-filter" class="form-select w-auto">
+                            <select id="analytics-role-filter" class="form-select bg-slate-900 border border-slate-700 text-slate-200 rounded-lg focus:border-amber-500 focus:ring-amber-500 w-auto">
                                 <option value="">All</option>
                                 <option value="USER">User</option>
                                 <option value="MANAGER">Manager</option>
@@ -683,47 +631,32 @@
                             </select>
                         </div>
                     </div>
-                    <!-- Analytics Dashboard -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Acknowledgment Trends -->
-                        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">Acknowledgment Trends
-                                <button class="export-btn ml-2" id="export-trends-csv">Export CSV</button>
-                            </h3>
-                            <canvas id="acknowledgment-trends-chart" class="h-64"></canvas>
+                    <!-- Analytics Custom Grid Layout -->
+                    <div class="analytics-grid gap-6">
+                      <div class="carousel-card analytics-trends bg-slate-800/80 backdrop-blur-lg border border-blue-500 rounded-2xl shadow-2xl">
+                        <h3 class="carousel-title">Acknowledgment Trends</h3>
+                        <canvas id="acknowledgment-trends-chart" class="h-64"></canvas>
+                        <button class="export-btn mt-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" id="export-trends-csv">Export CSV</button>
+                      </div>
+                      <div class="carousel-card analytics-category bg-slate-800/80 backdrop-blur-lg border border-amber-500 rounded-2xl shadow-2xl">
+                        <h3 class="carousel-title">Category Breakdown</h3>
+                        <canvas id="category-breakdown-chart" class="h-64"></canvas>
+                        <button class="export-btn mt-4 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" id="export-category-csv">Export CSV</button>
+                      </div>
+                      <div class="carousel-card analytics-user bg-slate-800/80 backdrop-blur-lg border border-green-500 rounded-2xl shadow-2xl">
+                        <h3 class="carousel-title">User Performance</h3>
+                        <canvas id="user-performance-chart" class="h-40"></canvas>
+                        <button class="export-btn mt-4 bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" id="export-user-csv">Export CSV</button>
+                      </div>
+                      <div class="carousel-card analytics-export bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl">
+                        <h3 class="carousel-title">Export Options</h3>
+                        <div class="space-y-3 mt-6">
+                          <button class="export-btn bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="exportComplianceReport()">Compliance Report</button>
+                          <button class="export-btn bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="exportUserReport()">User Activity Report</button>
+                          <button class="export-btn bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="exportNoticeReport()">Notice Summary Report</button>
+                          <button class="export-btn bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow-lg" onclick="exportFullDatabase()">Full Database Export</button>
                         </div>
-                        <!-- Category Breakdown -->
-                        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">Category Breakdown
-                                <button class="export-btn ml-2" id="export-category-csv">Export CSV</button>
-                            </h3>
-                            <canvas id="category-breakdown-chart" class="h-64"></canvas>
-                        </div>
-                        <!-- User Performance -->
-                        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">User Performance
-                                <button class="export-btn ml-2" id="export-user-csv">Export CSV</button>
-                            </h3>
-                            <canvas id="user-performance-chart" class="h-64"></canvas>
-                        </div>
-                        <!-- Export Options -->
-                        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                            <h3 class="text-lg font-bold text-white mb-4">Export Options</h3>
-                            <div class="space-y-3">
-                                <button class="export-btn" onclick="exportComplianceReport()">
-                                    Compliance Report
-                                </button>
-                                <button class="export-btn" onclick="exportUserReport()">
-                                    User Activity Report
-                                </button>
-                                <button class="export-btn" onclick="exportNoticeReport()">
-                                    Notice Summary Report
-                                </button>
-                                <button class="export-btn" onclick="exportFullDatabase()">
-                                    Full Database Export
-                                </button>
-                            </div>
-                        </div>
+                      </div>
                     </div>
                 </div>
 

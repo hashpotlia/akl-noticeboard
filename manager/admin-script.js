@@ -8,7 +8,7 @@ class SimpleCognitoAuth {
 
     async signIn(email, password) {
         try {
-            console.log('🔐 Attempting sign in...');
+            console.log('Attempting sign in...');
             
             const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
                 method: 'POST',
@@ -27,7 +27,7 @@ class SimpleCognitoAuth {
             });
             
             const result = await response.json();
-            console.log('📋 Sign in response:', result);
+            console.log('Sign in response:', result);
             
             if (result.AuthenticationResult) {
                 // Success - store user info
@@ -43,7 +43,7 @@ class SimpleCognitoAuth {
                 localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
 
                 
-                console.log('✅ Sign in successful');
+                console.log('Sign in successful');
                 return { success: true, user: this.currentUser };
             }
             
@@ -63,7 +63,7 @@ class SimpleCognitoAuth {
             };
             
         } catch (error) {
-            console.error('❌ Sign in error:', error);
+            console.error('Sign in error:', error);
             return { 
                 success: false, 
                 message: `Network error: ${error.message}` 
@@ -73,7 +73,7 @@ class SimpleCognitoAuth {
 
     async setNewPassword(email, newPassword, session) {
         try {
-            console.log('🔄 Setting new password...');
+            console.log('Setting new password...');
             
             const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
                 method: 'POST',
@@ -93,7 +93,7 @@ class SimpleCognitoAuth {
             });
             
             const result = await response.json();
-            console.log('📋 Password challenge response:', result);
+            console.log('Password challenge response:', result);
             
             if (result.AuthenticationResult) {
                 // Success - store user info
@@ -118,7 +118,7 @@ const userDataToStore = {
 };
 localStorage.setItem('akl_auth_user', JSON.stringify(userDataToStore));
                 
-                console.log('✅ Password set and authentication completed');
+                console.log('Password set and authentication completed');
                 return { success: true, user: this.currentUser };
             }
             
@@ -128,7 +128,7 @@ localStorage.setItem('akl_auth_user', JSON.stringify(userDataToStore));
             };
             
         } catch (error) {
-            console.error('❌ Set password error:', error);
+            console.error('Set password error:', error);
             return { 
                 success: false, 
                 message: `Network error: ${error.message}` 
@@ -147,7 +147,7 @@ async getCurrentUser() {
             
             // CRITICAL FIX: If dbUser is missing, fetch it from database
             if (!parsedUser.dbUser && parsedUser.email) {
-                console.log('🔄 dbUser missing, fetching from database...');
+                console.log('dbUser missing, fetching from database...');
                 try {
                     const userRecord = await getUserByEmail(parsedUser.email);
                     if (userRecord) {
@@ -158,17 +158,17 @@ async getCurrentUser() {
                         
                         // Update localStorage with complete data
                         localStorage.setItem('akl_auth_user', JSON.stringify(this.currentUser));
-                        console.log('✅ User data restored and updated');
+                        console.log('User data restored and updated');
                     }
                 } catch (error) {
-                    console.error('❌ Failed to fetch user record:', error);
+                    console.error('Failed to fetch user record:', error);
                 }
             }
             
-            console.log('✅ User restored from storage');
+            console.log('User restored from storage');
             return this.currentUser;
         } catch (error) {
-            console.log('❌ Invalid stored user data');
+            console.log('Invalid stored user data');
             localStorage.removeItem('akl_auth_user');
         }
     }
@@ -181,7 +181,7 @@ async getCurrentUser() {
         this.currentUser = null;
         this.accessToken = null;
         localStorage.removeItem('akl_auth_user');
-        console.log('✅ Signed out');
+        console.log('Signed out');
     }
 
     isAuthenticated() {
@@ -214,10 +214,10 @@ async signUp(email, password) {
         });
         
         const result = await response.json();
-        console.log('📋 Sign up response:', result);
+        console.log('Sign up response:', result);
         
         if (result.UserSub) {
-            console.log('✅ Sign up successful - confirmation needed');
+            console.log('Sign up successful - confirmation needed');
             return { 
                 success: true, 
                 needsConfirmation: true,
@@ -231,7 +231,7 @@ async signUp(email, password) {
         };
         
     } catch (error) {
-        console.error('❌ Sign up error:', error);
+        console.error('Sign up error:', error);
         return { 
             success: false, 
             message: `Network error: ${error.message}` 
@@ -241,7 +241,7 @@ async signUp(email, password) {
 
 async resetPassword(email) {
     try {
-        console.log('🔑 Attempting password reset...');
+        console.log('Attempting password reset...');
         
         const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
             method: 'POST',
@@ -256,10 +256,10 @@ async resetPassword(email) {
         });
         
         const result = await response.json();
-        console.log('📋 Password reset response:', result);
+        console.log('Password reset response:', result);
         
         if (result.CodeDeliveryDetails) {
-            console.log('✅ Password reset code sent');
+            console.log('Password reset code sent');
             return { 
                 success: true, 
                 message: 'Password reset code sent to your email!' 
@@ -272,7 +272,7 @@ async resetPassword(email) {
         };
         
     } catch (error) {
-        console.error('❌ Password reset error:', error);
+        console.error('Password reset error:', error);
         return { 
             success: false, 
             message: `Network error: ${error.message}` 
@@ -283,7 +283,7 @@ async resetPassword(email) {
 // Add this method to your SimpleCognitoAuth class
 async confirmPasswordReset(email, confirmationCode, newPassword) {
     try {
-        console.log('🔐 Confirming password reset...');
+        console.log('Confirming password reset...');
         
         const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
             method: 'POST',
@@ -300,10 +300,10 @@ async confirmPasswordReset(email, confirmationCode, newPassword) {
         });
         
         const result = await response.json();
-        console.log('📋 Password reset confirmation response:', result);
+        console.log('Password reset confirmation response:', result);
         
         if (response.ok && !result.message) {
-            console.log('✅ Password reset completed successfully');
+            console.log('Password reset completed successfully');
             return { 
                 success: true, 
                 message: 'Password reset successfully! You can now sign in with your new password.' 
@@ -316,7 +316,7 @@ async confirmPasswordReset(email, confirmationCode, newPassword) {
         };
         
     } catch (error) {
-        console.error('❌ Password reset confirmation error:', error);
+        console.error('Password reset confirmation error:', error);
         return { 
             success: false, 
             message: `Network error: ${error.message}` 
@@ -327,7 +327,7 @@ async confirmPasswordReset(email, confirmationCode, newPassword) {
 // Add this method to your SimpleCognitoAuth class
 async confirmSignUp(email, confirmationCode) {
     try {
-        console.log('✅ Confirming sign up...');
+        console.log('Confirming sign up...');
         
         const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
             method: 'POST',
@@ -343,10 +343,10 @@ async confirmSignUp(email, confirmationCode) {
         });
         
         const result = await response.json();
-        console.log('📋 Sign up confirmation response:', result);
+        console.log('Sign up confirmation response:', result);
         
         if (response.ok && !result.message) {
-            console.log('✅ Account confirmed successfully');
+            console.log('Account confirmed successfully');
             return { 
                 success: true, 
                 message: 'Account verified successfully! You can now sign in.' 
@@ -359,7 +359,7 @@ async confirmSignUp(email, confirmationCode) {
         };
         
     } catch (error) {
-        console.error('❌ Sign up confirmation error:', error);
+        console.error('Sign up confirmation error:', error);
         return { 
             success: false, 
             message: `Network error: ${error.message}` 
@@ -370,7 +370,7 @@ async confirmSignUp(email, confirmationCode) {
 // Add resend confirmation code method
 async resendConfirmationCode(email) {
     try {
-        console.log('📧 Resending confirmation code...');
+        console.log('Resending confirmation code...');
         
         const response = await fetch('https://cognito-idp.us-east-1.amazonaws.com/', {
             method: 'POST',
@@ -385,10 +385,10 @@ async resendConfirmationCode(email) {
         });
         
         const result = await response.json();
-        console.log('📋 Resend confirmation response:', result);
+        console.log('Resend confirmation response:', result);
         
         if (result.CodeDeliveryDetails) {
-            console.log('✅ Confirmation code resent');
+            console.log('Confirmation code resent');
             return { 
                 success: true, 
                 message: 'Verification code sent to your email!' 
@@ -401,7 +401,7 @@ async resendConfirmationCode(email) {
         };
         
     } catch (error) {
-        console.error('❌ Resend confirmation error:', error);
+        console.error('Resend confirmation error:', error);
         return { 
             success: false, 
             message: `Network error: ${error.message}` 
@@ -428,7 +428,7 @@ async createOrUpdateUserRecord(email, cognitoId, additionalData = {}) {
             };
             
             user = await createUserInDB(userData);
-            console.log('✅ New user record created:', user);
+            console.log('New user record created:', user);
         } else {
             // Update last login
             user = await updateUserInDB(user.id, {
@@ -810,10 +810,16 @@ class AKLAdminPanel {
         const trendsCtx = replaceCanvas('acknowledgment-trends-chart');
         const ackByDay = {};
         filteredSignatures.forEach(sig => {
-            const day = new Date(sig.timestamp).toISOString().split('T')[0];
-            ackByDay[day] = (ackByDay[day] || 0) + 1;
+            // Group by NZ local date instead of UTC
+            const localDay = new Date(sig.timestamp).toLocaleDateString('en-NZ', { timeZone: 'Pacific/Auckland' });
+            ackByDay[localDay] = (ackByDay[localDay] || 0) + 1;
         });
-        const trendLabels = Object.keys(ackByDay).sort();
+        const trendLabels = Object.keys(ackByDay).sort((a, b) => {
+            // Sort by actual date value
+            const da = new Date(a.split('/').reverse().join('-'));
+            const db = new Date(b.split('/').reverse().join('-'));
+            return da - db;
+        });
         const trendData = trendLabels.map(day => ackByDay[day]);
         this.analyticsCharts.trends = new Chart(trendsCtx, {
             type: 'line',
@@ -902,11 +908,17 @@ class AKLAdminPanel {
         });
         const ackByDay = {};
         filteredSignatures.forEach(sig => {
-            const day = new Date(sig.timestamp).toISOString().split('T')[0];
-            ackByDay[day] = (ackByDay[day] || 0) + 1;
+            // Group by NZ local date instead of UTC
+            const localDay = new Date(sig.timestamp).toLocaleDateString('en-NZ', { timeZone: 'Pacific/Auckland' });
+            ackByDay[localDay] = (ackByDay[localDay] || 0) + 1;
         });
         const rows = [['Date','Acknowledgments']];
-        Object.keys(ackByDay).sort().forEach(day => {
+        Object.keys(ackByDay).sort((a, b) => {
+            // Sort by actual date value
+            const da = new Date(a.split('/').reverse().join('-'));
+            const db = new Date(b.split('/').reverse().join('-'));
+            return da - db;
+        }).forEach(day => {
             rows.push([day, ackByDay[day]]);
         });
         this.downloadCSV(rows, `acknowledgment-trends-${new Date().toISOString().split('T')[0]}.csv`);
@@ -1289,7 +1301,7 @@ hasAdminAccess(role) {
     if (role === 'USER') {
         // Prevent redirect loop: only redirect if not already on main noticeboard
         if (!window.location.pathname.endsWith('index.html') && !window.location.pathname.endsWith('/')) {
-            console.log('👤 USER role detected, redirecting to main noticeboard...');
+            console.log('USER role detected, redirecting to main noticeboard...');
             // Store current session info before redirect
             const sessionInfo = {
                 email: this.currentUser.email || this.currentUser.dbUser?.email,
@@ -1310,7 +1322,7 @@ hasAdminAccess(role) {
             console.log('💾 Session stored for main noticeboard:', sessionInfo);
             window.location.href = '../index.html';
         } else {
-            console.log('👤 USER role detected, already on main noticeboard. No redirect.');
+            console.log('USER role detected, already on main noticeboard. No redirect.');
         }
         return false;
     }
@@ -2212,7 +2224,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-4xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">📝 Post New Notice</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Post New Notice</h2>
                 </div>
                 
                 <!-- Modal Body - Scrollable -->
@@ -2242,12 +2254,12 @@ renderCurrentTab() {
                                 <label class="form-label">Category *</label>
                                 <select name="category" class="form-select" required>
                                     <option value="">Select Category</option>
-                                    <option value="Safety">🦺 Safety</option>
-                                    <option value="Operations">⚙️ Operations</option>
-                                    <option value="Policy">📜 Policy</option>
-                                    <option value="People">👥 People</option>
-                                    <option value="Training">🎓 Training</option>
-                                    <option value="Maintenance">🔧 Maintenance</option>
+                                    <option value="Safety">Safety</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Policy">Policy</option>
+                                    <option value="People">People</option>
+                                    <option value="Training">Training</option>
+                                    <option value="Maintenance">Maintenance</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2279,11 +2291,11 @@ renderCurrentTab() {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="isPinned" class="rounded">
-                                <span class="text-sm">📌 Pin this notice to the top</span>
+                                <span class="text-sm">Pin this notice to the top</span>
                             </label>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="requiresSignature" class="rounded">
-                                <span class="text-sm">✍️ Requires acknowledgment</span>
+                                <span class="text-sm">Requires acknowledgment</span>
                             </label>
                         </div>
                     </form>
@@ -2323,7 +2335,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-4xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">✏️ Edit Notice</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Edit Notice</h2>
                 </div>
                 
                 <!-- Modal Body - Scrollable -->
@@ -2344,12 +2356,12 @@ renderCurrentTab() {
                             <div class="form-group">
                                 <label class="form-label">Category *</label>
                                 <select name="category" class="form-select" required>
-                                    <option value="Safety" ${notice.category === 'Safety' ? 'selected' : ''}>🦺 Safety</option>
-                                    <option value="Operations" ${notice.category === 'Operations' ? 'selected' : ''}>⚙️ Operations</option>
-                                    <option value="Policy" ${notice.category === 'Policy' ? 'selected' : ''}>📜 Policy</option>
-                                    <option value="People" ${notice.category === 'People' ? 'selected' : ''}>👥 People</option>
-                                    <option value="Training" ${notice.category === 'Training' ? 'selected' : ''}>🎓 Training</option>
-                                    <option value="Maintenance" ${notice.category === 'Maintenance' ? 'selected' : ''}>🔧 Maintenance</option>
+                                    <option value="Safety" ${notice.category === 'Safety' ? 'selected' : ''}>Safety</option>
+                                    <option value="Operations" ${notice.category === 'Operations' ? 'selected' : ''}>Operations</option>
+                                    <option value="Policy" ${notice.category === 'Policy' ? 'selected' : ''}>Policy</option>
+                                    <option value="People" ${notice.category === 'People' ? 'selected' : ''}>People</option>
+                                    <option value="Training" ${notice.category === 'Training' ? 'selected' : ''}>Training</option>
+                                    <option value="Maintenance" ${notice.category === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2375,11 +2387,11 @@ renderCurrentTab() {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="isPinned" class="rounded" ${notice.isPinned ? 'checked' : ''}>
-                                <span class="text-sm">📌 Pin this notice to the top</span>
+                                <span class="text-sm">Pin this notice to the top</span>
                             </label>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="requiresSignature" class="rounded" ${notice.requiresSignature ? 'checked' : ''}>
-                                <span class="text-sm">✍️ Requires acknowledgment</span>
+                                <span class="text-sm">Requires acknowledgment</span>
                             </label>
                         </div>
                     </form>
@@ -2393,7 +2405,7 @@ renderCurrentTab() {
                     </button>
                     <button onclick="window.adminPanel.submitEditNotice()" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                        ✏️ Update Notice
+                        Update Notice
                     </button>
                 </div>
             </div>
@@ -2420,7 +2432,7 @@ renderCurrentTab() {
                 <!-- Modal Header -->
                 <div class="modal-header">
                     <div class="flex items-center justify-between w-full">
-                        <h2 class="text-xl font-bold text-slate-100">👁️ Notice Details</h2>
+                        <h2 class="text-xl font-bold text-slate-100">Notice Details</h2>
                         <div class="flex items-center space-x-2">
                             <span class="priority-badge priority-${notice.priority}">${this.getPriorityIcon(notice.priority)} ${notice.priority.toUpperCase()}</span>
                             ${notice.isPinned ? '<span class="text-amber-400">📌 PINNED</span>' : ''}
@@ -2521,7 +2533,7 @@ renderCurrentTab() {
                     </button>
                     <button onclick="window.adminPanel.editNotice('${notice.id}')" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                        ✏️ Edit Notice
+                        Edit Notice
                     </button>
                 </div>
             </div>
@@ -2673,20 +2685,20 @@ renderCurrentTab() {
             medium: '📋',
             low: '💡'
         };
-        return icons[priority] || '📋';
+        return icons[priority] || '';
     }
 
     getCategoryIcon(category) {
         const icons = {
-            Safety: '🦺',
-            Operations: '⚙️',
-            Policy: '📜',
-            People: '👥',
-            Feedback: '💬',
-            Training: '🎓',
-            Maintenance: '🔧'
+            Safety: '',
+            Operations: '',
+            Policy: '',
+            People: '',
+            Feedback: '',
+            Training: '',
+            Maintenance: ''
         };
-        return icons[category] || '📋';
+        return icons[category] || '';
     }
 
     // Helper for full date/time string
@@ -2749,7 +2761,7 @@ renderCurrentTab() {
                 <!-- Modal Header -->
                 <div class="modal-header">
                     <h2 class="text-xl font-bold text-slate-100">
-                        ${isCritical ? '🚨 Post Critical Notice' : '📝 Post New Notice'}
+                        ${isCritical ? 'Post Critical Notice' : 'Post New Notice'}
                     </h2>
                 </div>
                 
@@ -2780,12 +2792,12 @@ renderCurrentTab() {
                                 <label class="form-label">Category *</label>
                                 <select name="category" class="form-select" required>
                                     <option value="">Select Category</option>
-                                    <option value="Safety" ${isCritical ? 'selected' : ''}>🦺 Safety</option>
-                                    <option value="Operations">⚙️ Operations</option>
-                                    <option value="Policy">📜 Policy</option>
-                                    <option value="People">👥 People</option>
-                                    <option value="Training">🎓 Training</option>
-                                    <option value="Maintenance">🔧 Maintenance</option>
+                                    <option value="Safety" ${isCritical ? 'selected' : ''}>Safety</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Policy">Policy</option>
+                                    <option value="People">People</option>
+                                    <option value="Training">Training</option>
+                                    <option value="Maintenance">Maintenance</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2811,11 +2823,11 @@ renderCurrentTab() {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="isPinned" class="rounded" ${isCritical ? 'checked' : ''}>
-                                <span class="text-sm">📌 Pin this notice to the top</span>
+                                <span class="text-sm">Pin this notice to the top</span>
                             </label>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="requiresSignature" class="rounded" ${isCritical ? 'checked' : ''}>
-                                <span class="text-sm">✍️ Requires acknowledgment</span>
+                                <span class="text-sm">Requires acknowledgment</span>
                             </label>
                         </div>
                     </form>
@@ -2829,7 +2841,7 @@ renderCurrentTab() {
                     </button>
                     <button onclick="submitNotice()" 
                             class="px-4 py-2 ${isCritical ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'} text-white rounded-lg transition-colors">
-                        ${isCritical ? '🚨 Post Critical Notice' : '📝 Post Notice'}
+                        ${isCritical ? 'Post Critical Notice' : 'Post Notice'}
                     </button>
                 </div>
             </div>
@@ -2943,7 +2955,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-4xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">✏️ Edit Notice</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Edit Notice</h2>
                 </div>
                 
                 <!-- Modal Body - Scrollable -->
@@ -2964,12 +2976,12 @@ renderCurrentTab() {
                             <div class="form-group">
                                 <label class="form-label">Category *</label>
                                 <select name="category" class="form-select" required>
-                                    <option value="Safety" ${notice.category === 'Safety' ? 'selected' : ''}>🦺 Safety</option>
-                                    <option value="Operations" ${notice.category === 'Operations' ? 'selected' : ''}>⚙️ Operations</option>
-                                    <option value="Policy" ${notice.category === 'Policy' ? 'selected' : ''}>📜 Policy</option>
-                                    <option value="People" ${notice.category === 'People' ? 'selected' : ''}>👥 People</option>
-                                    <option value="Training" ${notice.category === 'Training' ? 'selected' : ''}>🎓 Training</option>
-                                    <option value="Maintenance" ${notice.category === 'Maintenance' ? 'selected' : ''}>🔧 Maintenance</option>
+                                    <option value="Safety" ${notice.category === 'Safety' ? 'selected' : ''}>Safety</option>
+                                    <option value="Operations" ${notice.category === 'Operations' ? 'selected' : ''}>Operations</option>
+                                    <option value="Policy" ${notice.category === 'Policy' ? 'selected' : ''}>Policy</option>
+                                    <option value="People" ${notice.category === 'People' ? 'selected' : ''}>People</option>
+                                    <option value="Training" ${notice.category === 'Training' ? 'selected' : ''}>Training</option>
+                                    <option value="Maintenance" ${notice.category === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2990,11 +3002,11 @@ renderCurrentTab() {
                         <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="isPinned" class="rounded" ${notice.isPinned ? 'checked' : ''}>
-                                <span class="text-sm">📌 Pin this notice to the top</span>
+                                <span class="text-sm">Pin this notice to the top</span>
                             </label>
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="requiresSignature" class="rounded" ${notice.requiresSignature ? 'checked' : ''}>
-                                <span class="text-sm">✍️ Requires acknowledgment</span>
+                                <span class="text-sm">Requires acknowledgment</span>
                             </label>
                         </div>
                     </form>
@@ -3008,7 +3020,7 @@ renderCurrentTab() {
                     </button>
                     <button onclick="submitEditNotice()" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                        ✏️ Update Notice
+                        Update Notice
                     </button>
                 </div>
             </div>
@@ -3179,7 +3191,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-4xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">👁️ Notice Details</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Notice Details</h2>
                 </div>
                 
                 <!-- Modal Body -->
@@ -3286,7 +3298,7 @@ renderCurrentTab() {
                     </button>
                     <button onclick="editNotice('${notice.id}')" 
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                        ✏️ Edit Notice
+                        Edit Notice
                     </button>
                 </div>
             </div>
@@ -3318,7 +3330,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-2xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">📦 Bulk Actions</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Bulk Actions</h2>
                     <p class="text-slate-400 text-sm">${selectedNotices.length} notice(s) selected</p>
                 </div>
                 
@@ -3326,7 +3338,7 @@ renderCurrentTab() {
                 <div class="modal-body">
                     <!-- Selection Summary -->
                     <div class="bg-slate-700/50 rounded-lg p-4 mb-6">
-                        <h3 class="text-lg font-bold text-white mb-3">📊 Selection Summary</h3>
+                        <h3 class="text-lg font-bold text-white mb-3">Selection Summary</h3>
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <span class="text-slate-400">Pinned:</span>
@@ -3350,34 +3362,25 @@ renderCurrentTab() {
                     <!-- Bulk Actions -->
                     <div class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <button class="bulk-action-btn bg-blue-600 hover:bg-blue-500" 
-                                    onclick="window.adminPanel.handleBulkPin()" 
-                                    ${pinnedCount === selectedNotices.length ? 'disabled' : ''}>
-                                📌 Pin Selected (${unpinnedCount} notices)
+                            <button class="bulk-action-btn bg-blue-600 hover:bg-blue-500" onclick="bulkPin()" ${pinnedCount === selectedNotices.length ? 'disabled' : ''}>
+                                Pin Selected (${unpinnedCount} notices)
                             </button>
-                            <button class="bulk-action-btn bg-slate-600 hover:bg-slate-500" 
-                                    onclick="window.adminPanel.handleBulkUnpin()" 
-                                    ${pinnedCount === 0 ? 'disabled' : ''}>
-                                📌 Unpin Selected (${pinnedCount} notices)
+                            <button class="bulk-action-btn bg-slate-600 hover:bg-slate-500" onclick="bulkUnpin()" ${pinnedCount === 0 ? 'disabled' : ''}>
+                                Unpin Selected (${pinnedCount} notices)
                             </button>
-                            <button class="bulk-action-btn bg-green-600 hover:bg-green-500" 
-                                    onclick="window.adminPanel.handleBulkRequireSignature()" 
-                                    ${requiresSignatureCount === selectedNotices.length ? 'disabled' : ''}>
-                                ✍️ Require Acknowledgment (${noSignatureCount} notices)
+                            <button class="bulk-action-btn bg-green-600 hover:bg-green-500" onclick="bulkRequireSignature()" ${requiresSignatureCount === selectedNotices.length ? 'disabled' : ''}>
+                                Require Acknowledgment (${noSignatureCount} notices)
                             </button>
-                            <button class="bulk-action-btn bg-purple-600 hover:bg-purple-500" 
-                                    onclick="window.adminPanel.handleBulkRemoveSignature()" 
-                                    ${requiresSignatureCount === 0 ? 'disabled' : ''}>
-                                ✍️ Remove Ack Requirement (${requiresSignatureCount} notices)
+                            <button class="bulk-action-btn bg-purple-600 hover:bg-purple-500" onclick="bulkRemoveSignature()" ${requiresSignatureCount === 0 ? 'disabled' : ''}>
+                                Remove Ack Requirement (${requiresSignatureCount} notices)
                             </button>
                         </div>
                         
                         <!-- Dangerous Actions -->
                         <div class="border-t border-slate-600 pt-4">
-                            <p class="text-red-400 text-sm font-medium mb-3">⚠️ Dangerous Actions</p>
-                            <button class="bulk-action-btn bg-red-600 hover:bg-red-500 w-full" 
-                                    onclick="window.adminPanel.handleBulkDelete()">
-                                🗑️ Delete Selected Notices (${selectedNotices.length} notices)
+                            <p class="text-red-400 text-sm font-medium mb-3">Dangerous Actions</p>
+                            <button class="bulk-action-btn bg-red-600 hover:bg-red-500 w-full" onclick="bulkDelete()">
+                                Delete Selected Notices (${selectedNotices.length} notices)
                             </button>
                         </div>
                     </div>
@@ -3656,20 +3659,20 @@ renderCurrentTab() {
             medium: '📋',
             low: '💡'
         };
-        return icons[priority] || '📋';
+        return icons[priority] || '';
     }
 
     getCategoryIcon(category) {
         const icons = {
-            Safety: '🦺',
-            Operations: '⚙️',
-            Policy: '📜',
-            People: '👥',
-            Feedback: '💬',
-            Training: '🎓',
-            Maintenance: '🔧'
+            Safety: '',
+            Operations: '',
+            Policy: '',
+            People: '',
+            Feedback: '',
+            Training: '',
+            Maintenance: ''
         };
-        return icons[category] || '📋';
+        return icons[category] || '';
     }
 
     getTimeAgo(timestamp) {
@@ -4047,7 +4050,7 @@ renderCurrentTab() {
             <div class="modal-content w-full max-w-2xl">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h2 class="text-xl font-bold text-slate-100">📦 Bulk Actions</h2>
+                    <h2 class="text-xl font-bold text-slate-100">Bulk Actions</h2>
                     <p class="text-slate-400 text-sm">${selectedNotices.length} notice(s) selected</p>
                 </div>
                 
@@ -4055,7 +4058,7 @@ renderCurrentTab() {
                 <div class="modal-body">
                     <!-- Selection Summary -->
                     <div class="bg-slate-700/50 rounded-lg p-4 mb-6">
-                        <h3 class="text-lg font-bold text-white mb-3">📊 Selection Summary</h3>
+                        <h3 class="text-lg font-bold text-white mb-3">Selection Summary</h3>
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <span class="text-slate-400">Pinned:</span>
@@ -4080,24 +4083,24 @@ renderCurrentTab() {
                     <div class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <button class="bulk-action-btn bg-blue-600 hover:bg-blue-500" onclick="bulkPin()" ${pinnedCount === selectedNotices.length ? 'disabled' : ''}>
-                                📌 Pin Selected (${unpinnedCount} notices)
+                                Pin Selected (${unpinnedCount} notices)
                             </button>
                             <button class="bulk-action-btn bg-slate-600 hover:bg-slate-500" onclick="bulkUnpin()" ${pinnedCount === 0 ? 'disabled' : ''}>
-                                📌 Unpin Selected (${pinnedCount} notices)
+                                Unpin Selected (${pinnedCount} notices)
                             </button>
                             <button class="bulk-action-btn bg-green-600 hover:bg-green-500" onclick="bulkRequireSignature()" ${requiresSignatureCount === selectedNotices.length ? 'disabled' : ''}>
-                                ✍️ Require Acknowledgment (${noSignatureCount} notices)
+                                Require Acknowledgment (${noSignatureCount} notices)
                             </button>
                             <button class="bulk-action-btn bg-purple-600 hover:bg-purple-500" onclick="bulkRemoveSignature()" ${requiresSignatureCount === 0 ? 'disabled' : ''}>
-                                ✍️ Remove Ack Requirement (${requiresSignatureCount} notices)
+                                Remove Ack Requirement (${requiresSignatureCount} notices)
                             </button>
                         </div>
                         
                         <!-- Dangerous Actions -->
                         <div class="border-t border-slate-600 pt-4">
-                            <p class="text-red-400 text-sm font-medium mb-3">⚠️ Dangerous Actions</p>
+                            <p class="text-red-400 text-sm font-medium mb-3">Dangerous Actions</p>
                             <button class="bulk-action-btn bg-red-600 hover:bg-red-500 w-full" onclick="bulkDelete()">
-                                🗑️ Delete Selected Notices (${selectedNotices.length} notices)
+                                Delete Selected Notices (${selectedNotices.length} notices)
                             </button>
                         </div>
                     </div>
@@ -4854,11 +4857,11 @@ renderUsersTable() {
 
 getRoleIcon(role) {
     const icons = {
-        'SUPER_ADMIN': '🔑',
-        'MANAGER': '👔',
-        'USER': '👤'
+        'SUPER_ADMIN': '',
+        'MANAGER': '',
+        'USER': ''
     };
-    return icons[role] || '👤';
+    return icons[role] || '';
 }
 
 // Show create user modal
@@ -4869,7 +4872,7 @@ showCreateUserModal() {
         <div class="modal-content w-full max-w-2xl">
             <!-- Modal Header -->
             <div class="modal-header">
-                <h2 class="text-xl font-bold text-slate-100">➕ Create New User</h2>
+                <h2 class="text-xl font-bold text-slate-100">Create New User</h2>
             </div>
             
             <!-- Modal Body -->
@@ -4893,9 +4896,9 @@ showCreateUserModal() {
                             <label class="form-label">Role *</label>
                             <select name="role" class="form-select" required>
                                 <option value="">Select Role</option>
-                                <option value="USER">👤 User</option>
-                                <option value="MANAGER">👔 Manager</option>
-                                ${this.isSuperAdmin() ? '<option value="SUPER_ADMIN">🔑 Super Admin</option>' : ''}
+                                <option value="USER">User</option>
+                                <option value="MANAGER">Manager</option>
+                                ${this.isSuperAdmin() ? '<option value="SUPER_ADMIN">Super Admin</option>' : ''}
                             </select>
                         </div>
                         <div class="form-group">
@@ -4922,7 +4925,7 @@ showCreateUserModal() {
                     
                     <div class="flex items-center space-x-2">
                         <input type="checkbox" name="isActive" class="rounded" checked>
-                        <span class="text-sm">✅ Account is active</span>
+                        <span class="text-sm">Account is active</span>
                     </div>
                 </form>
             </div>
@@ -4935,7 +4938,7 @@ showCreateUserModal() {
                 </button>
                 <button onclick="window.adminPanel.createUser()" 
                         class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
-                    ➕ Create User
+                    Create User
                 </button>
             </div>
         </div>
@@ -5072,7 +5075,7 @@ showUserDetailsModal(user) {
         <div class="modal-content w-full max-w-2xl">
             <!-- Modal Header -->
             <div class="modal-header">
-                <h2 class="text-xl font-bold text-slate-100">👁️ User Details</h2>
+                <h2 class="text-xl font-bold text-slate-100">User Details</h2>
             </div>
             
             <!-- Modal Body -->
@@ -5131,7 +5134,7 @@ showUserDetailsModal(user) {
                         
                         <!-- Acknowledgment Stats -->
                         <div class="mt-6">
-                            <h4 class="text-lg font-semibold text-white mb-3">📝 Acknowledgments</h4>
+                            <h4 class="text-lg font-semibold text-white mb-3">Acknowledgments</h4>
                             <div class="bg-slate-700 rounded-lg p-4">
                                 <div class="text-center">
                                     <div class="text-2xl font-bold text-blue-400">${this.getUserAcknowledgmentCount(user.id)}</div>
@@ -5151,7 +5154,7 @@ showUserDetailsModal(user) {
                 </button>
                 <button onclick="window.adminPanel.editUser('${user.id}'); this.closest('.modal').remove();" 
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
-                    ✏️ Edit User
+                    Edit User
                 </button>
             </div>
         </div>
@@ -5168,7 +5171,7 @@ showEditUserModal(user) {
         <div class="modal-content w-full max-w-2xl">
             <!-- Modal Header -->
             <div class="modal-header">
-                <h2 class="text-xl font-bold text-slate-100">✏️ Edit User</h2>
+                <h2 class="text-xl font-bold text-slate-100">Edit User</h2>
             </div>
             
             <!-- Modal Body -->
@@ -5194,9 +5197,9 @@ showEditUserModal(user) {
                         <div class="form-group">
                             <label class="form-label">Role *</label>
                             <select name="role" class="form-select" required>
-                                <option value="USER" ${user.role === 'USER' ? 'selected' : ''}>👤 User</option>
-                                <option value="MANAGER" ${user.role === 'MANAGER' ? 'selected' : ''}>👔 Manager</option>
-                                ${this.isSuperAdmin() ? `<option value="SUPER_ADMIN" ${user.role === 'SUPER_ADMIN' ? 'selected' : ''}>🔑 Super Admin</option>` : ''}
+                                <option value="USER" ${user.role === 'USER' ? 'selected' : ''}>User</option>
+                                <option value="MANAGER" ${user.role === 'MANAGER' ? 'selected' : ''}>Manager</option>
+                                ${this.isSuperAdmin() ? `<option value="SUPER_ADMIN" ${user.role === 'SUPER_ADMIN' ? 'selected' : ''}>Super Admin</option>` : ''}
                             </select>
                         </div>
                         <div class="form-group">
@@ -5213,7 +5216,7 @@ showEditUserModal(user) {
                     
                     <div class="flex items-center space-x-2">
                         <input type="checkbox" name="isActive" class="rounded" ${user.isActive ? 'checked' : ''}>
-                        <span class="text-sm">✅ Account is active</span>
+                        <span class="text-sm">Account is active</span>
                     </div>
                     
                     ${user.id !== this.currentUser.dbUser.id ? `
@@ -5246,7 +5249,7 @@ showEditUserModal(user) {
                 </button>
                 <button onclick="window.adminPanel.updateUser()" 
                         class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors">
-                    💾 Save Changes
+                    Save Changes
                 </button>
             </div>
         </div>
@@ -5452,10 +5455,16 @@ async showConfirmationModal({ title, message, confirmText = 'Confirm', type = 'w
         const trendsCtx = replaceCanvas('acknowledgment-trends-chart');
         const ackByDay = {};
         filteredSignatures.forEach(sig => {
-            const day = new Date(sig.timestamp).toISOString().split('T')[0];
-            ackByDay[day] = (ackByDay[day] || 0) + 1;
+            // Group by NZ local date instead of UTC
+            const localDay = new Date(sig.timestamp).toLocaleDateString('en-NZ', { timeZone: 'Pacific/Auckland' });
+            ackByDay[localDay] = (ackByDay[localDay] || 0) + 1;
         });
-        const trendLabels = Object.keys(ackByDay).sort();
+        const trendLabels = Object.keys(ackByDay).sort((a, b) => {
+            // Sort by actual date value
+            const da = new Date(a.split('/').reverse().join('-'));
+            const db = new Date(b.split('/').reverse().join('-'));
+            return da - db;
+        });
         const trendData = trendLabels.map(day => ackByDay[day]);
         this.analyticsCharts.trends = new Chart(trendsCtx, {
             type: 'line',
@@ -5545,11 +5554,17 @@ async showConfirmationModal({ title, message, confirmText = 'Confirm', type = 'w
         // Group by day
         const ackByDay = {};
         filteredSignatures.forEach(sig => {
-            const day = new Date(sig.timestamp).toISOString().split('T')[0];
-            ackByDay[day] = (ackByDay[day] || 0) + 1;
+            // Group by NZ local date instead of UTC
+            const localDay = new Date(sig.timestamp).toLocaleDateString('en-NZ', { timeZone: 'Pacific/Auckland' });
+            ackByDay[localDay] = (ackByDay[localDay] || 0) + 1;
         });
         const rows = [['Date','Acknowledgments']];
-        Object.keys(ackByDay).sort().forEach(day => {
+        Object.keys(ackByDay).sort((a, b) => {
+            // Sort by actual date value
+            const da = new Date(a.split('/').reverse().join('-'));
+            const db = new Date(b.split('/').reverse().join('-'));
+            return da - db;
+        }).forEach(day => {
             rows.push([day, ackByDay[day]]);
         });
         this.downloadCSV(rows, `acknowledgment-trends-${new Date().toISOString().split('T')[0]}.csv`);
@@ -5895,3 +5910,41 @@ function bulkDelete() {
 window.addEventListener('DOMContentLoaded', () => {
     window.adminPanel = new AKLAdminPanel();
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (document.querySelector('.shadcn-carousel')) {
+    new Glide('.shadcn-carousel', {
+      type: 'carousel',
+      perView: 1,
+      gap: 24,
+      autoplay: 6000,
+      hoverpause: true,
+      animationDuration: 600
+    }).mount();
+  }
+});
+
+// Analytics tab carousel initialization
+function initAnalyticsCarousel() {
+  if (document.querySelector('#analytics-carousel') && !document.querySelector('#analytics-carousel')._glideInitialized) {
+    const glide = new Glide('#analytics-carousel', {
+      type: 'carousel',
+      perView: 1,
+      gap: 24,
+      autoplay: 8000,
+      hoverpause: true,
+      animationDuration: 600
+    });
+    glide.mount();
+    document.querySelector('#analytics-carousel')._glideInitialized = true;
+  }
+}
+
+// Patch switchTab to initialize analytics carousel when switching to analytics
+const origSwitchTab = AKLAdminPanel.prototype.switchTab;
+AKLAdminPanel.prototype.switchTab = function(tabName) {
+  origSwitchTab.call(this, tabName);
+  if (tabName === 'analytics') {
+    setTimeout(initAnalyticsCarousel, 100); // Wait for DOM update
+  }
+};

@@ -348,3 +348,351 @@ body {
     background: linear-gradient(to bottom, rgba(30,41,59,0), rgba(30,41,59,0.85));
     pointer-events: none;
 } 
+
+body.light-mode {
+    background-color: #f7f9fb;
+    color: #25324d;
+}
+
+body.light-mode .notice-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f4f6fa 100%);
+    border: 1px solid #e3e8ee;
+    color: #25324d;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.06);
+}
+body.light-mode .notice-card:hover {
+    border-color: #fbbf24;
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.10);
+}
+body.light-mode .notice-critical {
+    border-left: 6px solid #ef4444;
+    background: linear-gradient(135deg, #fff6f6 0%, #fef2f2 100%);
+}
+body.light-mode .notice-high {
+    border-left: 6px solid #fbbf24;
+    background: linear-gradient(135deg, #fffbe6 0%, #fef9c3 100%);
+}
+body.light-mode .notice-medium {
+    border-left: 6px solid #60a5fa;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e6f1fa 100%);
+}
+body.light-mode .notice-low {
+    border-left: 6px solid #34d399;
+    background: linear-gradient(135deg, #e6f9f2 0%, #f0fdf4 100%);
+}
+body.light-mode .priority-badge {
+    background-color: #f1f5f9;
+    color: #25324d;
+    border: 1px solid #e3e8ee;
+}
+body.light-mode .priority-critical {
+    background-color: #ef4444;
+    color: #fff;
+}
+body.light-mode .priority-high {
+    background-color: #fbbf24;
+    color: #fff;
+}
+body.light-mode .priority-medium {
+    background-color: #60a5fa;
+    color: #fff;
+}
+body.light-mode .priority-low {
+    background-color: #34d399;
+    color: #fff;
+}
+body.light-mode .category-badge {
+    background-color: #e8f0fe;
+    color: #2563eb;
+    border: 1px solid #cbd5e1;
+}
+body.light-mode .notice-card .tag-pill, body.light-mode .notice-card .bg-slate-700 {
+    background-color: #e8f0fe !important;
+    color: #2563eb !important;
+}
+body.light-mode .notice-content h1, body.light-mode .notice-content h2, body.light-mode .notice-content h3 {
+    color: #25324d;
+}
+body.light-mode .notice-content strong {
+    color: #25324d;
+}
+body.light-mode .notice-content em {
+    color: #64748b;
+}
+body.light-mode .notice-content blockquote {
+    border-left: 4px solid #fbbf24;
+    color: #64748b;
+    background: #fffbe6;
+}
+body.light-mode .signature-section {
+    background-color: #f8fafc;
+    border: 1.5px solid #e3e8ee;
+}
+body.light-mode .signature-required {
+    border-color: #fbbf24;
+    background-color: #fffbe6;
+}
+body.light-mode .signature-completed {
+    border-color: #34d399;
+    background-color: #e6f9f2;
+}
+body.light-mode .sign-btn {
+    background: linear-gradient(135deg, #fbbf24 0%, #fde68a 100%);
+    color: #25324d;
+    border: 1px solid #fbbf24;
+}
+body.light-mode .sign-btn:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+    color: #25324d;
+}
+body.light-mode .pagination-btn {
+    background-color: #f1f5f9;
+    color: #25324d;
+    border: 1px solid #e3e8ee;
+}
+body.light-mode .pagination-btn:hover:not(.disabled) {
+    background-color: #e8f0fe;
+    border-color: #a1a1aa;
+    color: #fbbf24;
+}
+body.light-mode .pagination-btn.disabled {
+    background-color: #f1f5f9;
+    border-color: #e3e8ee;
+    color: #a1a1aa;
+}
+body.light-mode .pagination-number {
+    background-color: #f1f5f9;
+    color: #25324d;
+    border: 1px solid #e3e8ee;
+}
+body.light-mode .pagination-number:hover {
+    background-color: #e8f0fe;
+    color: #fbbf24;
+}
+body.light-mode .pagination-number.active {
+    background-color: #fbbf24;
+    color: #fff;
+    border-color: #fbbf24;
+}
+body.light-mode .pagination-number.active:hover {
+    background-color: #fde68a;
+    color: #25324d;
+}
+body.light-mode .bg-slate-800, body.light-mode .bg-slate-800\/80, body.light-mode .bg-slate-900, body.light-mode .bg-slate-900\/80 {
+    background-color: #f8fafc !important;
+    color: #25324d !important;
+    border-color: #e3e8ee !important;
+}
+body.light-mode .border-slate-700, body.light-mode .border-slate-800, body.light-mode .border-blue-500, body.light-mode .border-green-500, body.light-mode .border-amber-500, body.light-mode .border-purple-500 {
+    border-color: #e3e8ee !important;
+}
+body.light-mode .text-white {
+    color: #25324d !important;
+}
+body.light-mode .text-slate-400, body.light-mode .text-slate-300 {
+    color: #64748b !important;
+}
+body.light-mode .text-blue-400 {
+    color: #2563eb !important;
+}
+body.light-mode .text-green-400 {
+    color: #059669 !important;
+}
+body.light-mode .text-amber-400 {
+    color: #d97706 !important;
+}
+body.light-mode .text-purple-400 {
+    color: #7c3aed !important;
+}
+body.light-mode .bg-blue-600 {
+    background-color: #2563eb !important;
+    color: #fff !important;
+}
+body.light-mode .bg-green-600 {
+    background-color: #059669 !important;
+    color: #fff !important;
+}
+body.light-mode .bg-amber-600 {
+    background-color: #fbbf24 !important;
+    color: #25324d !important;
+}
+body.light-mode .bg-purple-900\/60 {
+    background-color: #f3e8ff !important;
+    color: #7c3aed !important;
+}
+body.light-mode .bg-gradient-to-br {
+    background: linear-gradient(135deg, #f8fafc 0%, #f4f6fa 100%) !important;
+}
+body.light-mode .backdrop-blur-lg {
+    backdrop-filter: blur(8px);
+}
+body.light-mode input, body.light-mode select, body.light-mode textarea {
+    background-color: #fff !important;
+    color: #25324d !important;
+    border-color: #e3e8ee !important;
+}
+body.light-mode input:disabled {
+    background-color: #f1f5f9 !important;
+    color: #a1a1aa !important;
+}
+body.light-mode .shadow-2xl, body.light-mode .shadow-lg {
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.06), 0 1.5px 4px rgba(0,0,0,0.03);
+}
+body.light-mode .form-select {
+    background-color: #fff !important;
+    color: #25324d !important;
+    border-color: #e3e8ee !important;
+}
+body.light-mode .form-select:focus {
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 0 2px #fde68a !important;
+}
+body.light-mode .form-input:focus {
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 0 2px #fde68a !important;
+}
+body.light-mode .toast.success {
+    background: #e6f9f2;
+    color: #059669;
+}
+body.light-mode .toast.error {
+    background: #fef2f2;
+    color: #ef4444;
+}
+body.light-mode .toast.warning {
+    background: #fffbe6;
+    color: #d97706;
+}
+body.light-mode .toast.info {
+    background: #e8f0fe;
+    color: #2563eb;
+}
+body.light-mode ::-webkit-scrollbar-track {
+    background: #e8f0fe;
+}
+body.light-mode ::-webkit-scrollbar-thumb {
+    background-color: #fde68a;
+    border: 3px solid #e8f0fe;
+}
+body.light-mode ::-webkit-scrollbar-thumb:hover {
+    background-color: #fbbf24;
+}
+
+/* Fix for acknowledgment cards in light mode */
+body.light-mode #ack-history .bg-slate-700,
+body.light-mode #ack-history .notice-card,
+body.light-mode #ack-history .ack-card {
+    background: #f1f5f9 !important;
+    color: #25324d !important;
+    border: 1px solid #e3e8ee !important;
+} 
+
+/* Header & Button Styles for Light Mode */
+body.light-mode #theme-toggle-btn {
+    background: #f1f5f9;
+    color: #25324d;
+    border: 1px solid #e3e8ee;
+    box-shadow: 0 1px 4px rgba(59,130,246,0.04);
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+body.light-mode #theme-toggle-btn:hover {
+    background: #e8f0fe;
+    color: #fbbf24;
+    border-color: #fbbf24;
+}
+body.light-mode #refresh-btn {
+    background: #f1f5f9;
+    color: #25324d;
+    border: 1px solid #e3e8ee;
+    box-shadow: 0 1px 4px rgba(59,130,246,0.04);
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+body.light-mode #refresh-btn:hover {
+    background: #e8f0fe;
+    color: #2563eb;
+    border-color: #2563eb;
+}
+body.light-mode #home-btn {
+    background: #34d399;
+    color: #fff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(52,211,153,0.08);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+body.light-mode #home-btn:hover {
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(52,211,153,0.15);
+    filter: brightness(1.05);
+}
+body.light-mode #logout-btn {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(239,68,68,0.08);
+    transition: background 0.2s, color 0.2s;
+}
+body.light-mode #logout-btn:hover {
+    background: #b91c1c;
+    color: #fff;
+}
+
+/* Make all buttons in light mode a bit rounder and softer */
+body.light-mode button, body.light-mode .btn, body.light-mode input[type="button"], body.light-mode input[type="submit"] {
+    border-radius: 0.6rem !important;
+    box-shadow: 0 1px 4px rgba(59,130,246,0.04);
+} 
+
+/* Stat Card Shimmer & Hover for Light Mode */
+body.light-mode .group.relative:hover .animate-shimmer {
+    opacity: 1 !important;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(59,130,246,0.10) 50%, rgba(255,255,255,0) 100%) !important;
+}
+body.light-mode .group.relative {
+    box-shadow: 0 2px 8px rgba(59,130,246,0.06);
+    transition: box-shadow 0.2s;
+}
+body.light-mode .group.relative:hover {
+    box-shadow: 0 6px 24px rgba(59,130,246,0.10);
+}
+body.light-mode .from-blue-900\/60 {
+    background: linear-gradient(135deg, #e8f0fe 0%, #f8fafc 100%) !important;
+}
+body.light-mode .from-green-900\/60 {
+    background: linear-gradient(135deg, #e6f9f2 0%, #f8fafc 100%) !important;
+}
+body.light-mode .from-amber-900\/60 {
+    background: linear-gradient(135deg, #fffbe6 0%, #f8fafc 100%) !important;
+}
+body.light-mode .from-purple-900\/60 {
+    background: linear-gradient(135deg, #f3e8ff 0%, #f8fafc 100%) !important;
+}
+
+/* Home button hover for light mode */
+body.light-mode #home-btn {
+    background: #34d399;
+    color: #fff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(52,211,153,0.08);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+body.light-mode #home-btn:hover {
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(52,211,153,0.15);
+}
+
+/* Update Profile button hover for light mode */
+body.light-mode #profile-form button[type="submit"] {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(37,99,235,0.08);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+body.light-mode #profile-form button[type="submit"]:hover {
+    background: #1d4ed8;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.15);
+    filter: brightness(1.05);
+} 
