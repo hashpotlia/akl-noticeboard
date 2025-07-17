@@ -219,6 +219,12 @@ body.light-mode .category-pill:hover {
   margin: 0.5em 0 0.5em 1.5em;
   padding-left: 1.5em;
 }
+.notice-content ul {
+  list-style-type: disc;
+}
+.notice-content ol {
+  list-style-type: decimal;
+}
 .notice-content li {
   margin: 0.25em 0;
   list-style-position: inside;
