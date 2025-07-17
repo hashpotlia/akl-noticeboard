@@ -56,16 +56,16 @@
                     <!-- Navigation -->
                     <div class="hidden md:flex items-center space-x-6">
                         <button id="nav-all" class="nav-btn active text-sm font-medium px-3 py-2 rounded-md transition-colors" data-filter="all">
-                            📋 All Notices
+                            All Notices
                         </button>
                         <button id="nav-pinned" class="nav-btn text-sm font-medium px-3 py-2 rounded-md transition-colors" data-filter="pinned">
-                            📌 Pinned
+                            Pinned
                         </button>
                         <button id="nav-unsigned" class="nav-btn text-sm font-medium px-3 py-2 rounded-md transition-colors" data-filter="unsigned">
-                            ✍️ Need Acknowledgement
+                            Need Acknowledgement
                         </button>
                         <button id="nav-categories" class="nav-btn text-sm font-medium px-3 py-2 rounded-md transition-colors" data-filter="categories">
-                            🏷️ Categories
+                            Categories
                         </button>
                     </div>
 
@@ -79,13 +79,13 @@
                             </svg>
                         </div>
 
-                        <!-- Manager Portal Button -->
-						<button id="manager-portal-btn" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center space-x-2" onclick="window.location.href='manager/admin.html'">
-							<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m0 12h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75m-9.75-3h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75m-9.75-3h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75M7.5 18v-2.25m0 0V9.75m0 5.25v-5.25m0 0h.75m-.75 0h.75m-.75 0v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-							</svg>
-							<span class="hidden md:inline">Manager Portal</span>
-						</button>
+                        <!-- Portal/Profile Button -->
+                        <button id="portal-btn" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center space-x-2">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m0 12h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75m-9.75-3h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75m-9.75-3h9.75m-9.75 0a1.5 1.5 0 0 1 0-3m0 3a1.5 1.5 0 0 0 0-3m0 3h.75M7.5 18v-2.25m0 0V9.75m0 5.25v-5.25m0 0h.75m-.75 0h.75m-.75 0v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                            </svg>
+                            <span class="hidden md:inline" id="portal-btn-text">Login</span>
+                        </button>
                         <button id="logout-btn" class="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center space-x-2 hidden" type="button">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
@@ -128,7 +128,7 @@
                         </div>
                         <div class="text-sm text-slate-400">
                             <span id="total-notices">0</span> notices • 
-                            <span id="unsigned-count">0</span> need acknowledgement 
+                            <span id="unsigned-count">0</span>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -191,9 +191,10 @@
     <!-- Scripts -->
     <script src="script.js"></script>
     <script>
-    // Enhanced portal button logic with session/role check
+    // Enhanced portal/profile button logic with session/role check
     window.addEventListener('DOMContentLoaded', function() {
-        const btn = document.getElementById('manager-portal-btn');
+        const btn = document.getElementById('portal-btn');
+        const btnText = document.getElementById('portal-btn-text');
         const logoutBtn = document.getElementById('logout-btn');
         if (!btn) return;
         let label = 'Login';
@@ -218,17 +219,21 @@
         }
         // If a valid session exists, update label and href
         if (role) {
-            label = 'Portal Access';
             if (role === 'USER') {
+                label = 'Profile';
                 href = 'manager/user-portal.html';
             } else if (role === 'MANAGER' || role === 'SUPER_ADMIN') {
+                label = 'Portal Access';
+                href = 'manager/admin.html';
+            } else {
+                label = 'Portal Access';
                 href = 'manager/admin.html';
             }
             if (logoutBtn) logoutBtn.classList.remove('hidden');
         } else {
             if (logoutBtn) logoutBtn.classList.add('hidden');
         }
-        btn.querySelector('span').textContent = label;
+        btnText.textContent = label;
         btn.onclick = () => { window.location.href = href; };
         // Logout logic for main noticeboard
         if (logoutBtn) {

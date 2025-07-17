@@ -171,6 +171,7 @@ class AKLNoticeBoard {
         this.autoRefreshInterval = null;
         this.isAdmin = false;
 		this.richTextEditor = null;
+        this.selectedCategory = null; // Track selected category for sub-filtering
         
         // Pagination properties
         this.currentPage = 1;
@@ -415,6 +416,11 @@ class AKLNoticeBoard {
         this.currentFilter = filter;
         this.currentPage = 1; // Reset to first page when changing filters
         
+        // Clear selected category when switching filters
+        if (filter !== 'categories') {
+            this.selectedCategory = null;
+        }
+        
         // Update navigation buttons
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -452,6 +458,10 @@ class AKLNoticeBoard {
                 );
                 break;
             case 'categories':
+                // Filter by selected category if one is selected
+                if (this.selectedCategory) {
+                    filtered = filtered.filter(notice => notice.category === this.selectedCategory);
+                }
                 // For categories view, we'll handle pagination differently
                 break;
             case 'all':
@@ -515,6 +525,12 @@ class AKLNoticeBoard {
                 filtered = filtered.filter(notice => 
                     notice.requiresSignature && !this.isNoticeSigned(notice.id)
                 );
+                break;
+            case 'categories':
+                // Filter by selected category if one is selected
+                if (this.selectedCategory) {
+                    filtered = filtered.filter(notice => notice.category === this.selectedCategory);
+                }
                 break;
         }
 
@@ -606,6 +622,25 @@ class AKLNoticeBoard {
         
         // Add event listeners to signature buttons
         this.attachSignatureListeners();
+        // Add expand/collapse listeners
+        setTimeout(() => {
+            document.querySelectorAll('.expand-pill').forEach(pill => {
+                pill.addEventListener('click', (e) => {
+                    const noticeId = pill.dataset.noticeId;
+                    const content = document.getElementById(`notice-content-${noticeId}`);
+                    const expanded = pill.getAttribute('data-expanded') === 'true';
+                    if (expanded) {
+                        content.classList.add('notice-content-collapsed');
+                        pill.textContent = 'Expand Notice';
+                        pill.setAttribute('data-expanded', 'false');
+                    } else {
+                        content.classList.remove('notice-content-collapsed');
+                        pill.textContent = 'Collapse Notice';
+                        pill.setAttribute('data-expanded', 'true');
+                    }
+                });
+            });
+        }, 0);
     }
 
     // Render notices grouped by categories
@@ -825,6 +860,32 @@ renderNoticeCard(notice) {
             `;
         }
     }
+    // Render content and check line count
+    const contentHtml = this.renderRichTextContent(notice.content);
+    // Create a temporary element to count lines
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = contentHtml;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.pointerEvents = 'none';
+    tempDiv.style.width = '100%';
+    tempDiv.className = 'notice-content';
+    document.body.appendChild(tempDiv);
+    // Count lines (approximate by <br> or block children)
+    let lineCount = 1;
+    if (tempDiv.innerHTML.includes('<br>')) {
+        lineCount = tempDiv.innerHTML.split('<br>').length;
+    } else {
+        // Fallback: count block children
+        lineCount = tempDiv.childElementCount || 1;
+    }
+    document.body.removeChild(tempDiv);
+    const needsExpand = lineCount > 5;
+    // Unique IDs for expand/collapse
+    const contentId = `notice-content-${notice.id}`;
+    const pillId = `expand-pill-${notice.id}`;
+    // Expand/collapse pill HTML
+    const expandPillHtml = needsExpand ? `<button class="expand-pill" id="${pillId}" data-notice-id="${notice.id}" data-expanded="false">Expand Notice</button>` : '';
     return `
         <div class="notice-card notice-${notice.priority} ${notice.isPinned ? 'notice-pinned' : ''} ${isExpired ? 'opacity-60' : ''}" data-notice-id="${notice.id}">
             <!-- Notice Header -->
@@ -837,20 +898,21 @@ renderNoticeCard(notice) {
                         <span class="category-badge">
                             ${this.getCategoryIcon(notice.category)} ${notice.category}
                         </span>
+                        ${expandPillHtml}
                         ${notice.isPinned ? '<span class="text-amber-400 text-sm font-medium">📌 PINNED</span>' : ''}
                     </div>
                     <h3 class="text-xl font-bold text-slate-100 mb-2">${notice.title}</h3>
                     <div class="flex flex-col md:flex-row md:items-center md:space-x-4 text-sm text-slate-400 space-y-1 md:space-y-0">
                         <span>👤 ${notice.author}</span>
-                        <span title="${this.getFullDateTime(notice.createdAt)}">📅 ${this.getTimeAgo(notice.createdAt)}</span>
+                        <span title="${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}">📅 ${new Date(notice.createdAt).toLocaleString('en-NZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Pacific/Auckland' })}</span>
                         <span>📍 ${notice.source}</span>
                         ${isExpired ? '<span class="text-red-400">⚠️ EXPIRED</span>' : (notice.expiresAt ? `<span>⏰ Expires ${this.getExpiresIn(notice.expiresAt)}</span>` : '')}
                     </div>
                 </div>
             </div>
             <!-- Notice Content with Rich Text -->
-            <div class="mb-4 notice-content">
-                ${this.renderRichTextContent(notice.content)}
+            <div class="mb-4 notice-content${needsExpand ? ' notice-content-collapsed' : ''}" id="${contentId}">
+                ${contentHtml}
             </div>
             <!-- Tags -->
             ${notice.tags && notice.tags.length > 0 ? `
@@ -894,7 +956,7 @@ renderNoticeCard(notice) {
             Safety: '🦺',
             Operations: '⚙️',
             Policy: '📜',
-            HR: '👥',
+            People: '👥',
             Feedback: '💬',
             Training: '🎓',
             Maintenance: '🔧',
@@ -1024,6 +1086,9 @@ renderNoticeCard(notice) {
         
         if (totalNoticesEl) totalNoticesEl.textContent = this.notices.length;
         
+        // Count notices that require acknowledgment
+        const requiresAckCount = this.notices.filter(notice => notice.requiresSignature).length;
+        
         // Count unsigned for current user
         let session = null, user = null, userId = null;
         try {
@@ -1044,8 +1109,16 @@ renderNoticeCard(notice) {
                 notice.requiresSignature && !this.allSignatures.some(sig => sig.noticeId === notice.id && sig.userId === userId)
             ).length;
         }
-        if (unsignedCountEl) unsignedCountEl.textContent = unsignedCount;
-        
+        // Update status bar text based on login status
+        if (unsignedCountEl) {
+            if (userId) {
+                // User is logged in - show detailed info
+                unsignedCountEl.textContent = `${requiresAckCount} requires acknowledgement • ${unsignedCount} need acknowledgement`;
+            } else {
+                // User is not logged in - show only requires count
+                unsignedCountEl.textContent = `${requiresAckCount} requires acknowledgement`;
+            }
+        }
         // Update new notice indicator
         const indicator = document.getElementById('new-notice-indicator');
         if (indicator) {
@@ -1094,9 +1167,48 @@ renderNoticeCard(notice) {
                     <button onclick="clearFilter()" class="ml-2 text-red-400">×</button>
                 </span>
             `);
+            
+            // Add category sub-pills when in categories mode
+            if (this.currentFilter === 'categories') {
+                const categories = ['Safety', 'Operations', 'Policy', 'People', 'Training', 'Maintenance'];
+                const categoryIcons = {
+                    Safety: '🦺',
+                    Operations: '⚙️',
+                    Policy: '📜',
+                    People: '👥',
+                    Training: '🎓',
+                    Maintenance: '🔧'
+                };
+                
+                categories.forEach(category => {
+                    const isActive = this.selectedCategory === category;
+                    const categoryCount = this.notices.filter(notice => notice.category === category).length;
+                    
+                    pills.push(`
+                        <span class="filter-pill sub-pill ${isActive ? 'active' : ''}" 
+                              onclick="window.noticeBoard.selectCategory('${category}')" 
+                              style="cursor: pointer;">
+                            ${categoryIcons[category]} ${category} (${categoryCount})
+                            ${isActive ? `<button onclick="event.stopPropagation(); window.noticeBoard.clearCategoryFilter()" class="ml-2 text-red-400">×</button>` : ''}
+                        </span>
+                    `);
+                });
+            }
         }
         
         container.innerHTML = pills.join('');
+    }
+
+    // Handle category sub-pill selection
+    selectCategory(category) {
+        this.selectedCategory = category;
+        this.render();
+    }
+
+    // Clear category sub-filter
+    clearCategoryFilter() {
+        this.selectedCategory = null;
+        this.render();
     }
 
     // Auto refresh functionality
@@ -1194,7 +1306,7 @@ showPostNoticeModal() {
                                 <option value="Safety">🦺 Safety</option>
                                 <option value="Operations">⚙️ Operations</option>
                                 <option value="Policy">📜 Policy</option>
-                                <option value="HR">👥 HR</option>
+                                <option value="People">👥 People</option>
                                 <option value="Training">🎓 Training</option>
                                 <option value="Maintenance">🔧 Maintenance</option>
                             </select>
