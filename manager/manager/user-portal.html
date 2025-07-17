@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AKL NoticeBoard - User Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="admin-style.css">
+    <link rel="stylesheet" href="user-portal-style.css">
+</head>
+<body class="bg-slate-900 text-white min-h-screen" aria-label="AKL NoticeBoard User Profile">
+    <script>
+      // DEBUG: Mark that user-portal.html loaded
+      try {
+        localStorage.setItem('akl_userportal_html_loaded', new Date().toISOString());
+      } catch (e) {}
+      // DEBUG: Persist all storage before unload
+      window.addEventListener('unload', function() {
+        try {
+          const debugDump = {
+            time: new Date().toISOString(),
+            localStorage: {...localStorage},
+            sessionStorage: {...sessionStorage}
+          };
+          localStorage.setItem('akl_userportal_unload_debug', JSON.stringify(debugDump));
+        } catch (e) {}
+      });
+    </script>
+    
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700" role="banner" aria-label="Header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    
+                    <div>
+                        <h1 class="text-xl font-bold" id="main-title">AKL NoticeBoard</h1>
+                        <p class="text-xs text-slate-400" id="portal-desc">User Profile</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <select id="lang-select" class="form-select bg-slate-700 border-slate-600 text-white text-xs py-1 px-2 rounded-lg" style="width:auto;" aria-label="Select Language">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                    </select>
+                    <button id="home-btn" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition-colors" aria-label="Go to Main NoticeBoard" tabindex="0">
+                        Home
+                    </button>
+                    <button id="logout-btn" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg transition-colors" aria-label="Logout" tabindex="0">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="flex items-center justify-center min-h-screen" role="status" aria-live="polite">
+        <div class="text-center">
+            <div class="text-6xl mb-4" aria-hidden="true">🔄</div>
+            <h2 class="text-xl font-semibold mb-2">Loading...</h2>
+            <p class="text-slate-400">Ading your profile...</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style="display: none;" role="main" aria-label="Profile Content">
+        
+        <!-- User Info Header -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold">
+                        <span id="user-avatar">👤</span>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white" id="user-name">Loading...</h2>                   <div class="flex flex-wrap gap-2 mt-2">
+                            <span class="priority-badge priority-medium text-xs" id="user-role-pill">Role: Loading...</span>
+                            <span class="category-badge text-xs" id="user-department-pill">Department: Loading...</span>
+                            <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium" id="user-email-pill">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="text-sm text-slate-400">
+                        Last updated: <span id="last-updated">Never</span>
+                    </div>
+                    <button id="refresh-btn" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-md transition-colors flex items-center space-x-1">
+                        <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card bg-blue-900/30 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-400 text-sm font-medium">Total Notices</p>
+                        <p class="text-3xl font-bold text-white" id="total-notices-stat">0</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <div class="metric-card bg-green-900/30 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-400 text-sm font-medium">Acknowledged</p>
+                        <p class="text-3xl font-bold text-white" id="acknowledged-stat">0</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <div class="metric-card bg-amber-900/30 border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-400 text-sm font-medium">Pending</p>
+                        <p class="text-3xl font-bold text-white" id="pending-stat">0</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <div class="metric-card bg-purple-900/30 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-400 text-sm font-medium">Compliance Rate</p>
+                        <p class="text-3xl font-bold text-white" id="compliance-rate">0%</p>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Management Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Profile Settings -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-bold text-white mb-4">Profile Settings</h3>
+                <form id="profile-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2" for="profile-name">Full Name</label>
+                        <input type="text" id="profile-name" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500" required aria-required="true">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2" for="profile-email">Email</label>
+                        <input type="email" id="profile-email" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2" for="profile-department">Department</label>
+                        <input type="text" id="profile-department" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2" for="profile-password">Change Password</label>
+                        <input type="password" id="profile-password" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white" placeholder="Leave blank to keep current password">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg transition-colors" aria-label="Update Profile">Update Profile</button>
+                </form>
+            </div>
+
+            <!-- Acknowledgment History -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-bold text-white mb-4">Recent Acknowledgments</h3>
+                <div id="ack-history" class="max-h-90 overflow-y-auto space-y-3" aria-label="Acknowledgment History">
+                    <div class="text-center text-slate-400 py-8">
+                        
+                        <p>Loading acknowledgment history...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 mt-8">         <h3 class="text-xl font-bold text-white mb-4">Activity Timeline</h3>
+            <div id="activity-timeline" class="space-y-4">
+                <div class="text-center text-slate-400 py-8">
+                    
+                    <p>Loading activity data...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="modal-container"></div>
+
+    <!-- Scripts -->
+    <script src="admin-script.js"></script>
+    <script src="user-portal.js"></script>
+</body>
+</html>
