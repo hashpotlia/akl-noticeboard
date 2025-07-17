@@ -37,12 +37,49 @@ body {
     50% { opacity: 0.7; }
 }
 
-/* Quill rich text editor overrides (if needed) */
-.rich-text-editor .ql-toolbar {
-    border-radius: 0.75rem 0.75rem 0 0;
+/* === FORCE Quill Rich Text Editor: White Toolbar Icons & White Input Area === */
+.rich-text-editor .ql-toolbar,
+.ql-toolbar {
+    background: #fff !important;
+    border-bottom: 1px solid #374151 !important;
+    border-radius: 0.75rem 0.75rem 0 0 !important;
 }
-.rich-text-editor .ql-container {
-    border-radius: 0 0 0.75rem 0.75rem;
+.rich-text-editor .ql-toolbar .ql-stroke,
+.ql-toolbar .ql-stroke {
+    stroke: #000 !important;
+}
+.rich-text-editor .ql-toolbar .ql-fill,
+.ql-toolbar .ql-fill {
+    fill: #000 !important;
+}
+.rich-text-editor .ql-toolbar button:hover .ql-stroke,
+.rich-text-editor .ql-toolbar button.ql-active .ql-stroke,
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: #fbbf24 !important;
+}
+.rich-text-editor .ql-toolbar button:hover .ql-fill,
+.rich-text-editor .ql-toolbar button.ql-active .ql-fill,
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+    fill: #fbbf24 !important;
+}
+
+.rich-text-editor .ql-container,
+.ql-container {
+    background: #fff !important;
+    color: #000 !important;
+    border-radius: 0 0 0.75rem 0.75rem !important;
+}
+.rich-text-editor .ql-editor,
+.ql-editor {
+    color: #000 !important;
+    background: #fff !important;
+}
+.rich-text-editor .ql-editor.ql-blank::before,
+.ql-editor.ql-blank::before {
+    color: #888 !important;
+    font-style: italic;
 }
 
 /* Expand/Collapse for notice content */
@@ -157,4 +194,83 @@ body.light-mode .category-pill:hover {
     background: #3b82f6;
     color: #fff;
     border-color: #2563eb;
+}
+
+/* --- Quill Rich Text Support for .notice-content --- */
+.notice-content {
+  line-height: 1.7;
+  font-size: 1.05rem;
+  color: #e5e7eb;
+  word-break: break-word;
+}
+.notice-content h1,
+.notice-content h2,
+.notice-content h3 {
+  color: #fbbf24;
+  font-weight: 700;
+  margin: 1.2em 0 0.5em 0;
+  line-height: 1.2;
+}
+.notice-content h1 { font-size: 1.5rem; }
+.notice-content h2 { font-size: 1.25rem; }
+.notice-content h3 { font-size: 1.1rem; }
+.notice-content ul,
+.notice-content ol {
+  margin: 0.5em 0 0.5em 1.5em;
+  padding-left: 1.5em;
+}
+.notice-content li {
+  margin: 0.25em 0;
+  list-style-position: inside;
+}
+.notice-content strong { color: #fff; font-weight: 700; }
+.notice-content em { color: #fbbf24; font-style: italic; }
+.notice-content blockquote {
+  border-left: 4px solid #fbbf24;
+  margin: 1em 0;
+  padding-left: 1em;
+  color: #fbbf24;
+  font-style: italic;
+  background: rgba(251,191,36,0.05);
+  border-radius: 0.5em;
+}
+.notice-content code {
+  background: #23272e;
+  color: #fbbf24;
+  padding: 0.15em 0.4em;
+  border-radius: 0.3em;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.98em;
+}
+.notice-content pre {
+  background: #181e29;
+  color: #fbbf24;
+  border: 1px solid #374151;
+  border-radius: 0.5em;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.notice-content pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+.notice-content a {
+  color: #60a5fa;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.notice-content a:hover {
+  color: #fbbf24;
+  text-decoration: underline wavy;
+}
+.notice-content .ql-align-center { text-align: center; }
+.notice-content .ql-align-right { text-align: right; }
+.notice-content .ql-align-justify { text-align: justify; }
+.notice-content img {
+  max-width: 100%;
+  border-radius: 0.5em;
+  margin: 0.5em 0;
+  box-shadow: 0 2px 8px rgba(30,41,59,0.18);
 }
