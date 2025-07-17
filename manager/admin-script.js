@@ -1575,17 +1575,18 @@ async loadAllData() {
             totalSignatures: this.signatures.length,
             pendingAcks: 0,
             overallComplianceRate: 0,
-            totalUsers: new Set(this.signatures.map(s => s.userId)).size,
+            totalUsers: this.users.length, // Count all users in system, not just those who signed
             overdueAcks: 0
         };
 
         // Calculate pending and overdue acknowledgments
         const requiresAckNotices = this.notices.filter(n => n.requiresSignature);
-        const uniqueUsers = new Set(this.signatures.map(s => s.userId));
+        const totalUsersInSystem = this.users.length; // Count all users in system
+        const usersWhoHaveSigned = new Set(this.signatures.map(s => s.userId));
         
         requiresAckNotices.forEach(notice => {
             const noticeSignatures = this.signatures.filter(s => s.noticeId === notice.id);
-            const expectedAcks = Math.max(uniqueUsers.size, 1); // At least 1 expected
+            const expectedAcks = Math.max(totalUsersInSystem, 1); // All users in system should acknowledge
             const actualAcks = noticeSignatures.length;
             const pending = Math.max(0, expectedAcks - actualAcks);
             stats.pendingAcks += pending;
@@ -1598,10 +1599,35 @@ async loadAllData() {
         });
 
         // Calculate compliance rate
-        if (requiresAckNotices.length > 0 && uniqueUsers.size > 0) {
-            const totalExpectedAcks = requiresAckNotices.length * uniqueUsers.size;
-            const totalActualAcks = this.signatures.length;
+        if (requiresAckNotices.length > 0 && totalUsersInSystem > 0) {
+            // Calculate total expected acknowledgments more accurately
+            let totalExpectedAcks = 0;
+            let totalActualAcks = 0;
+            
+            requiresAckNotices.forEach(notice => {
+                const noticeSignatures = this.signatures.filter(s => s.noticeId === notice.id);
+                // For each notice, all users in system should acknowledge it
+                totalExpectedAcks += totalUsersInSystem;
+                totalActualAcks += noticeSignatures.length;
+            });
+            
             stats.overallComplianceRate = Math.round((totalActualAcks / totalExpectedAcks) * 100);
+            
+            // Debug logging
+            console.log('🔍 Compliance Rate Debug:', {
+                totalUsersInSystem,
+                requiresAckNoticesCount: requiresAckNotices.length,
+                totalExpectedAcks,
+                totalActualAcks,
+                calculatedRate: stats.overallComplianceRate,
+                noticesRequiringAck: requiresAckNotices.map(n => ({ id: n.id, title: n.title })),
+                signaturesByNotice: requiresAckNotices.map(notice => ({
+                    noticeId: notice.id,
+                    noticeTitle: notice.title,
+                    signatureCount: this.signatures.filter(s => s.noticeId === notice.id).length,
+                    signatures: this.signatures.filter(s => s.noticeId === notice.id).map(s => ({ userId: s.userId, userName: s.userName }))
+                }))
+            });
         }
 
         return stats;
@@ -1613,10 +1639,10 @@ async loadAllData() {
         if (!notice || !notice.requiresSignature) return 100;
 
         const noticeSignatures = this.signatures.filter(s => s.noticeId === noticeId);
-        const uniqueUsers = new Set(this.signatures.map(s => s.userId));
+        const totalUsersInSystem = this.users.length;
         
-        if (uniqueUsers.size === 0) return 0;
-        return Math.round((noticeSignatures.length / uniqueUsers.size) * 100);
+        if (totalUsersInSystem === 0) return 0;
+        return Math.round((noticeSignatures.length / totalUsersInSystem) * 100);
     }
 
     // Calculate response time
@@ -1892,6 +1918,7 @@ renderCurrentTab() {
                 const signatures = this.signatures.filter(s => s.noticeId === notice.id);
                 const ackRate = this.calculateNoticeAckRate(notice.id);
                 const uniqueUsers = new Set(this.signatures.map(s => s.userId));
+                // Fix: Calculate pending based on users who should acknowledge this specific notice
                 const pending = Math.max(0, uniqueUsers.size - signatures.length);
 
                 return `

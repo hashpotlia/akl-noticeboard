@@ -274,7 +274,10 @@ class UserProfile {
         const pendingCount = this.notices.filter(n => 
             n.requiresSignature && !this.userSignatures.some(sig => sig.noticeId === n.id)
         ).length;
-        const complianceRate = totalNotices > 0 ? Math.round((acknowledgedCount / totalNotices) * 100) : 0;
+        
+        // Fix: Calculate compliance rate based only on notices that require acknowledgment
+        const noticesRequiringAck = this.notices.filter(n => n.requiresSignature).length;
+        const complianceRate = noticesRequiringAck > 0 ? Math.round((acknowledgedCount / noticesRequiringAck) * 100) : 100;
 
         document.getElementById('total-notices-stat').textContent = totalNotices;
         document.getElementById('acknowledged-stat').textContent = acknowledgedCount;
